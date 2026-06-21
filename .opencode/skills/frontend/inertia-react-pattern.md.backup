@@ -1,0 +1,391 @@
+# Inertia React Pattern Rehberi
+
+## Tanım
+Inertia.js, Laravel backend ile React/Vue frontend arasında köprü kuran bir framework'tür. Inertia React_pattern, React componentlerinin Laravel backend ile entegre çalışması için ortaya konmuş standartlara dayalı bir yapıdır.
+
+## Temel Yapı
+```
+resources/js/
+├── Components/           # Yeniden kullanılabilir componentler
+├── Pages/               # Inertia Page componentleri
+├── Layouts/             # Genel layout componentleri
+├── Hooks/               # Custom React Hook'lar
+├── Stores/              # Zustand/Pinia global state management
+└── app.js               # Inertia app başlatma noktası
+
+Pages/
+├── Auth/
+├── Dashboard/
+├── Users/
+└── Settings/
+```
+
+## Inertia ile Temel Component Yapısı
+```jsx
+import { Head, Link, useForm } from '@inertiajs/react';
+
+export default function UserCreate({ auth }) {
+  const { data, setData, post, processing, errors } = useForm({
+    name: '',
+    email: ''
+  });
+
+  const submit = (e) => {
+    e.preventDefault();
+    post(route('users.store'));
+  };
+
+  return (
+    <div className="container">
+      <Head title="Create User" />
+      
+      <form onSubmit={submit}>
+        <input
+          name="name"
+          value={data.name}
+          onChange={(e) => setData('name', e.target.value)}
+        />
+        {errors.name && <span>{errors.name}</span>}
+        
+        <input
+          name="email"
+          value={data.email}
+          onChange={(e) => setData('email', e.target.value)}
+        />
+        {errors.email && <span>{errors.email}</span>}
+        
+        <button disabled={processing}>Save</button>
+      </form>
+    </div>
+  );
+}
+```
+
+## Laravel Controller ile Entegrasyon
+```php
+class UserController extends Controller
+{
+    public function index()
+    {
+        $users = User::all();
+        
+        return Inertia::render('Users/Index', [
+            'users' => $users,
+            'filters' => request()->only(['search', 'trashed']),
+        ]);
+    }
+    
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users'
+        ]);
+
+        User::create($request->validated());
+
+        return redirect()->route('users.index');
+    }
+}
+```
+
+## Custom Hook Kullanımı
+```jsx
+// resources/js/Hooks/useAuth.js
+import { usePage } from '@inertiajs/react';
+
+export function useAuth() {
+  const { props } = usePage();
+  
+  return {
+    user: props.auth?.user || null,
+    isLoggedIn: !!props.auth?.user,
+    permissions: props.auth?.permissions || [],
+  };
+}
+
+// Kullanım
+export default function AdminPanel() {
+  const { user, isLoggedIn, permissions } = useAuth();
+  
+  useEffect(() => {
+    if (!isLoggedIn || !permissions.includes('admin')) {
+      router.visit('/unauthorized');
+    }
+  }, [isLoggedIn, permissions]);
+  
+  return <div>Admin Panel Content</div>;
+}
+```
+
+## Zustand ile Global State Yönetimi
+```javascript
+// resources/js/Stores/userStore.js
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+
+const useUserStore = create(devtools((set, get) => ({
+  users: [],
+  currentUser: null,
+  loading: false,
+  
+  fetchUsers: async () => {
+    set({ loading: true });
+    
+    const response = await axios.get('/api/users');
+    
+    set({
+      users: response.data,
+      loading: false
+    });
+  },
+  
+  setCurrentUser: (user) => set({ currentUser: user }),
+  
+  updateUser: (userId, userData) => set(state => ({
+    users: state.users.map(user =>
+      user.id === userId ? { ...user, ...userData } : user
+    )
+  })),
+})));
+
+export default useUserStore;
+```
+
+## Error Handling ve Loading States
+```jsx
+import { router, usePage } from '@inertiajs/react';
+
+export default function UserDelete({ userId }) {
+  const { flash } = usePage().props;
+  const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    if (flash.success) {
+      // Success notification
+    }
+  }, [flash.success]);
+  
+  const handleDelete = () => {
+    setLoading(true);
+    
+    router.delete(`/users/${userId}`, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setShowNotification('User deleted successfully');
+        setLoading(false);
+      },
+      onError: (errors) => {
+        setError(errors);
+        setLoading(false);
+      },
+    });
+  };
+  
+  return (
+    <button 
+      onClick={handleDelete} 
+      disabled={loading}
+      className={loading ? 'opacity-50' : ''}
+    >
+      {loading ? 'Deleting...' : 'Delete'}
+    </button>
+  );
+}
+```
+
+## Layout ve Outlet Kullanımı
+```jsx
+// Layout Component
+export default function AppLayout({ children }) {
+  const { user } = usePage().props.auth;
+  
+  return (
+    <div className="app-layout">
+      <header>
+        <Navigation user={user} />
+      </header>
+      
+      <main>
+        {/* Outlet olarak Inertia componentleri */}
+        {children}
+      </main>
+      
+      <footer>
+        <Footer />
+      </footer>
+    </div>
+  );
+}
+
+// Page Component
+export default function Dashboard() {
+  return (
+    <AppLayout>
+      <h1>Dashboard</h1>
+      {/* Page content */}
+    </AppLayout>
+  );
+}
+```
+
+## Form Handling Patterns
+```jsx
+import { useForm } from '@inertiajs/react';
+import debounce from 'lodash/debounce';
+
+export default function SearchUsers() {
+  const { data, setData, get, processing } = useForm({
+    search: '',
+    page: 1,
+  });
+  
+  // Debounced search
+  const debouncedSearch = useCallback(
+    debounce(() => {
+      get(route('users.index'));
+    }, 500),
+    [data.search]
+  );
+
+  useEffect(() => {
+    debouncedSearch();
+  }, [data.search]);
+
+  return (
+    <input
+      name="search"
+      value={data.search}
+      onChange={(e) => setData('search', e.target.value)}
+    />
+  );
+}
+
+// File upload form
+export default function UploadAvatar() {
+  const { data, setData, post, processing, errors, hasErrors } = useForm({
+    avatar: null
+  });
+
+  const submit = (e) => {
+    e.preventDefault();
+    post(route('profile.update'), {
+      forceFormData: true  // Important for file uploads
+    });
+  };
+
+  return (
+    <form onSubmit={submit} encType="multipart/form-data">
+      <input 
+        type="file" 
+        name="avatar" 
+        onChange={(e) => setData('avatar', e.target.files[0])}
+      />
+      <button disabled={processing}>Upload</button>
+    </form>
+  );
+}
+```
+
+## En İyi Uygulamalar
+
+### 1. Performans Optimizasyonu
+- Unnecessary renders için React.memo kullanın
+- Component importlarını lazy loading ile yapın
+- Zustand için selective subscription kullanın
+
+### 2. Code Splitting
+```jsx
+// Lazy loading pages
+const Dashboard = lazy(() => import('@/Pages/Dashboard'));
+const Users = lazy(() => import('@/Pages/Users/Index'));
+
+const RoutesComponent = () => (
+  <>
+    <Route path="/dashboard" element={
+      <Suspense fallback={<Spinner />}>
+        <Dashboard />
+      </Suspense>
+    } />
+  </>
+);
+```
+
+### 3. Error Boundaries
+```jsx
+// Error boundary component
+class InertiaErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorPage />;
+    }
+    return this.props.children;
+  }
+}
+
+// App wrapper
+export default function App({ initialPage, resolveComponent }) {
+  return (
+    <InertiaErrorBoundary>
+      <InertiaProvider initialPage={initialPage}>
+        <ResolveComponent resolveComponent={resolveComponent} />
+      </InertiaProvider>
+    </InertiaErrorBoundary>
+  );
+}
+```
+
+### 4. SEO ve Meta Tag Yönetimi
+```jsx
+import { Head } from '@inertiajs/react';
+
+export default function ShowUser({ user }) {
+  return (
+    <div>
+      <Head>
+        <title>{user.name} | {config.app_name}</title>
+        <meta name="description" content={`Profile of ${user.name}`} />
+        <link rel="canonical" href={route('users.show', user.id)} />
+      </Head>
+      
+      <h1>{user.name}</h1>
+      {/* Content */}
+    </div>
+  );
+}
+```
+
+## Laravel ile Routing Integration
+```javascript
+// resources/js/Components/Link.jsx - Custom Inertia Link
+export default function AppLink({ children, href, ...props }) {
+  return (
+    <InertiaLink
+      href={href}
+      {...props}
+      className={`app-link ${props.className || ''}`}
+    >
+      {children}
+    </InertiaLink>
+  );
+}
+
+// Named route kullanımı
+<Link href={route('users.index')}>Users</Link>
+```
+
+## Conclusion
+- Inertia + React yapıları için component yaşam döngüsünü iyi anlamak önemlidir
+- Global state için.external solutions tercih edilmelidir (Zustand)
+- Form handling için Inertia useForm hook'u tercih edilmelidir
+- Error handling ve loading states kullanıcı deneyimi için kritiktir
+- Proper code splitting performans açısından kritik öneme sahiptir
