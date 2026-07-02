@@ -12,10 +12,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ImageController extends Controller
 {
-    public function show(Request $request, SubmissionImage $image): StreamedResponse
+    public function show(Request $request, SubmissionImage $submissionImage): StreamedResponse
     {
+        if (!$request->user()) {
+            abort(403, 'Authentication required');
+        }
+
         $variant = $request->query('variant', 'generated');
-        $path = $variant === 'original' ? $image->original_image : $image->generated_image;
+        if (!in_array($variant, ['generated', 'original'], true)) {
+            abort(400, 'Invalid variant.');
+        }
+        $path = $variant === 'original' ? $submissionImage->original_image : $submissionImage->generated_image;
 
         if ($path === null || ! Storage::disk('public')->exists($path)) {
             abort(404);

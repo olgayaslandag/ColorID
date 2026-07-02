@@ -8,10 +8,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreSubmissionRequest;
 use App\Http\Resources\Api\SubmissionResource;
 use App\Http\Resources\Api\SubmissionStatusResource;
-use App\Models\Submission;
 use App\Jobs\GenerateImageJob;
+use App\Models\Submission;
+use App\Services\ImageStorageManager;
 use App\Services\TenantManager;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 
 class SubmissionController extends Controller
 {
@@ -26,38 +29,38 @@ class SubmissionController extends Controller
      */
     public function store(StoreSubmissionRequest $request): JsonResponse
     {
+        set_time_limit(300);
+
         $tenant = app(TenantManager::class)->getTenant();
-        $validated = $request->validated();
 
-        $submission = Submission::create([
-            'tenant_id' => $tenant->id,
-            'name' => $validated['name'],
-            'phone' => $validated['phone'],
-            'email' => $validated['email'] ?? null,
-            'city' => $validated['city'],
-            'surface' => $validated['surface'],
-            'palette_id' => $validated['palette_id'],
-            'prompt' => $validated['prompt'] ?? null,
-            'status' => 'pending',
-        ]);
+        return DB::transaction(function () use ($request, $tenant) {
+            $submission = Submission::create([
+                'tenant_id' => $tenant->getKey(),
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'city' => $request->city,
+                'category_id' => $request->category_id,
+                'swatch_id' => $request->swatch_id,
+                'surface' => $request->surface,
+                'prompt' => $request->prompt,
+                'status' => 'pending',
+            ]);
 
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('uploads/originals', 'public');
-
-                $submission->images()->create([
-                    'original_image' => $path,
-                ]);
+            $images = $request->file('images', []);
+            foreach ($images as $image) {
+                $storedPath = app(ImageStorageManager::class)->storeOriginal($image);
+                $submission->images()->create(['original_image' => $storedPath]);
             }
-        }
 
-        $submission->load('images');
+            Bus::dispatch(new GenerateImageJob($submission));
 
-        dispatch(new GenerateImageJob($submission));
+            $submission->refresh();
 
-        return SubmissionResource::make($submission)
-            ->response()
-            ->setStatusCode(201);
+            return SubmissionResource::make($submission)
+                ->response()
+                ->setStatusCode(201);
+        });
     }
 
     /**
@@ -68,10 +71,15 @@ class SubmissionController extends Controller
      */
     public function show(string $uuid): JsonResponse
     {
-        $submission = Submission::query()
-            ->with('images')
-            ->where('uuid', $uuid)
-            ->firstOrFail();
+        $tenant = app(TenantManager::class)->getTenant();
+
+        $query = Submission::query()->with('images')->where('uuid', $uuid);
+
+        if ($tenant !== null) {
+            $query->where('tenant_id', $tenant->getKey());
+        }
+
+        $submission = $query->firstOrFail();
 
         return response()->json(SubmissionResource::make($submission)->toArray(request()));
     }
@@ -86,9 +94,15 @@ class SubmissionController extends Controller
      */
     public function status(string $uuid): JsonResponse
     {
-        $submission = Submission::query()
-            ->where('uuid', $uuid)
-            ->firstOrFail(['uuid', 'status']);
+        $tenant = app(TenantManager::class)->getTenant();
+
+        $query = Submission::query()->where('uuid', $uuid);
+
+        if ($tenant !== null) {
+            $query->where('tenant_id', $tenant->getKey());
+        }
+
+        $submission = $query->firstOrFail(['uuid', 'status']);
 
         return response()->json(SubmissionStatusResource::make($submission)->toArray(request()));
     }

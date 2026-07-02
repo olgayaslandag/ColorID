@@ -55,6 +55,18 @@ export default function AuthenticatedLayout({ children }) {
                                 {__('messages.nav_profile')}
                             </Link>
                             <Link
+                                href={route('profile.two-factor')}
+                                className="rounded-3 px-3 py-2 small fw-medium text-secondary hover-text-body hover-bg-light transition"
+                            >
+                                {__('messages.two_factor')}
+                            </Link>
+                            <Link
+                                href={route('notifications.edit')}
+                                className="rounded-3 px-3 py-2 small fw-medium text-secondary hover-text-body hover-bg-light transition"
+                            >
+                                {__('messages.notification_preferences')}
+                            </Link>
+                            <Link
                                 href={route('logout')}
                                 method="post"
                                 as="button"
@@ -113,6 +125,18 @@ export default function AuthenticatedLayout({ children }) {
                                 className="d-block rounded-3 px-3 py-2 small fw-medium text-secondary hover-bg-light"
                             >
                                 {__('messages.nav_profile')}
+                            </Link>
+                            <Link
+                                href={route('profile.two-factor')}
+                                className="d-block rounded-3 px-3 py-2 small fw-medium text-secondary hover-bg-light"
+                            >
+                                {__('messages.two_factor')}
+                            </Link>
+                            <Link
+                                href={route('notifications.edit')}
+                                className="d-block rounded-3 px-3 py-2 small fw-medium text-secondary hover-bg-light"
+                            >
+                                {__('messages.notification_preferences')}
                             </Link>
                             <Link
                                 href={route('logout')}

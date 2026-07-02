@@ -19,10 +19,10 @@ class SubmissionImageResource extends JsonResource
         return [
             'id' => $this->resource->id,
             'original_url' => $this->resource->original_image
-                ? route('image.show', ['image' => $this->resource->id, 'variant' => 'original'])
+                ? route('image.show', ['submissionImage' => $this->resource->id, 'variant' => 'original'])
                 : null,
             'generated_url' => $this->resource->generated_image
-                ? route('image.show', ['image' => $this->resource->id, 'variant' => 'generated'])
+                ? route('image.show', ['submissionImage' => $this->resource->id, 'variant' => 'generated'])
                 : null,
         ];
     }

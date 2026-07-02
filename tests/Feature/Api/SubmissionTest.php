@@ -2,18 +2,14 @@
 
 namespace Tests\Feature\Api;
 
-use Tests\TestCase;
 use App\Models\Tenant;
 use App\Models\Submission;
 use App\Models\SubmissionImage;
 use App\Services\TenantManager;
 use App\Jobs\GenerateImageJob;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
-
-uses(TestCase::class, RefreshDatabase::class);
 
 it('creates a submission with valid data', function () {
     Storage::fake('public');
@@ -24,6 +20,9 @@ it('creates a submission with valid data', function () {
         'status' => true,
     ]);
 
+    $category = \App\Models\ProductCategory::factory()->create();
+    $swatch = \App\Models\Swatch::factory()->create();
+
     app(TenantManager::class)->setTenant($tenant);
 
     $file = UploadedFile::fake()->image('photo.jpg');
@@ -33,16 +32,20 @@ it('creates a submission with valid data', function () {
             'name' => 'John Doe',
             'phone' => '555-1234',
             'email' => 'john@example.com',
+            'city' => 'Istanbul',
+            'surface' => 'ic_duvar',
+            'category_id' => $category->id,
+            'swatch_id' => $swatch->id,
             'prompt' => 'Make the walls blue',
             'images' => [$file],
         ]);
 
     $response->assertCreated();
 
-    expect($response->json('data.name'))->toBe('John Doe');
-    expect($response->json('data.status'))->toBe('pending');
+    expect($response->json('name'))->toBe('John Doe');
+    expect($response->json('status'))->toBe('pending');
 
-    $submission = Submission::where('uuid', $response->json('data.uuid'))->first();
+    $submission = Submission::where('uuid', $response->json('uuid'))->first();
     expect($submission)->not->toBeNull();
     expect($submission->tenant_id)->toBe($tenant->id);
     expect($submission->name)->toBe('John Doe');
@@ -64,7 +67,7 @@ it('validates required fields', function () {
         ->postJson('/api/submissions', []);
 
     $response->assertUnprocessable();
-    $response->assertJsonValidationErrors(['name', 'phone', 'email', 'images']);
+    $response->assertJsonValidationErrors(['name', 'phone', 'email', 'city', 'category_id', 'swatch_id', 'images']);
 });
 
 it('validates image file types', function () {
@@ -75,6 +78,9 @@ it('validates image file types', function () {
         'status' => true,
     ]);
 
+    $category = \App\Models\ProductCategory::factory()->create();
+    $swatch = \App\Models\Swatch::factory()->create();
+
     $fakeFile = UploadedFile::fake()->create('document.pdf');
 
     $response = $this->withoutMiddleware(\App\Http\Middleware\IdentifyTenant::class)
@@ -82,6 +88,10 @@ it('validates image file types', function () {
             'name' => 'John Doe',
             'phone' => '555-1234',
             'email' => 'john@example.com',
+            'city' => 'Istanbul',
+            'surface' => 'ic_duvar',
+            'category_id' => $category->id,
+            'swatch_id' => $swatch->id,
             'images' => [$fakeFile],
         ]);
 
@@ -97,6 +107,9 @@ it('limits number of images to 3', function () {
         'status' => true,
     ]);
 
+    $category = \App\Models\ProductCategory::factory()->create();
+    $swatch = \App\Models\Swatch::factory()->create();
+
     $files = [
         UploadedFile::fake()->image('photo1.jpg'),
         UploadedFile::fake()->image('photo2.jpg'),
@@ -109,6 +122,10 @@ it('limits number of images to 3', function () {
             'name' => 'John Doe',
             'phone' => '555-1234',
             'email' => 'john@example.com',
+            'city' => 'Istanbul',
+            'surface' => 'ic_duvar',
+            'category_id' => $category->id,
+            'swatch_id' => $swatch->id,
             'images' => $files,
         ]);
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Exceptions;
 
 use Exception;
+use Illuminate\Http\Request;
 
 class ImageGenerationException extends Exception
 {
@@ -52,11 +53,15 @@ class ImageGenerationException extends Exception
     /**
      * Render the exception as an HTTP response.
      */
-    public function render(): \Illuminate\Http\JsonResponse
+    public function render(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
-        return response()->json([
-            'error' => 'Image generation failed.',
-            'message' => $this->getMessage(),
-        ], 500);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'error' => 'Image generation failed.',
+                'message' => $this->getMessage(),
+            ], 500);
+        }
+
+        return redirect()->back()->with('error', 'Image generation failed: ' . $this->getMessage());
     }
 }

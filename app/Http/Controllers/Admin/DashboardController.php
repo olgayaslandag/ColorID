@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Submission;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,31 +21,25 @@ class DashboardController extends Controller
         $today = now()->startOfDay();
         $startOfMonth = now()->startOfMonth();
 
+        $monthlyStats = Submission::query()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('COUNT(CASE WHEN status = ? THEN 1 END) as completed', ['completed'])
+            ->selectRaw('COUNT(CASE WHEN status = ? THEN 1 END) as failed', ['failed'])
+            ->where('created_at', '>=', $startOfMonth)
+            ->first();
+
         $dailySubmissions = Submission::query()
             ->where('created_at', '>=', $today)
             ->count();
 
-        $monthlyTotal = Submission::query()
-            ->where('created_at', '>=', $startOfMonth)
-            ->count();
-
-        $totalCompleted = Submission::query()
-            ->where('created_at', '>=', $startOfMonth)
-            ->where('status', 'completed')
-            ->count();
-
-        $totalFailed = Submission::query()
-            ->where('created_at', '>=', $startOfMonth)
-            ->where('status', 'failed')
-            ->count();
-
+        $monthlyTotal = (int) $monthlyStats->total;
         $monthlyTotalForPercentage = $monthlyTotal > 0 ? $monthlyTotal : 1;
 
         $stats = [
             'daily_submissions' => $dailySubmissions,
             'monthly_total' => $monthlyTotal,
-            'success_rate' => round(($totalCompleted / $monthlyTotalForPercentage) * 100, 1),
-            'error_rate' => round(($totalFailed / $monthlyTotalForPercentage) * 100, 1),
+            'success_rate' => $monthlyTotal > 0 ? round(((int) $monthlyStats->completed / $monthlyTotal) * 100, 1) : 0,
+            'error_rate' => $monthlyTotal > 0 ? round(((int) $monthlyStats->failed / $monthlyTotal) * 100, 1) : 0,
         ];
 
         $recentSubmissions = Submission::query()
@@ -65,6 +58,41 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'stats' => $stats,
             'recentSubmissions' => $recentSubmissions,
+        ]);
+    }
+
+    public function quota(Request $request): Response
+    {
+        $tenants = Tenant::query()
+            ->withCount(['submissions as total_submissions' => function ($q) {
+                $q->whereMonth('created_at', now()->month);
+            }])
+            ->withCount(['submissions as completed_submissions' => function ($q) {
+                $q->where('status', 'completed')
+                    ->whereMonth('created_at', now()->month);
+            }])
+            ->withCount(['submissions as failed_submissions' => function ($q) {
+                $q->where('status', 'failed')
+                    ->whereMonth('created_at', now()->month);
+            }])
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($tenant) => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'domain' => $tenant->domain,
+                'monthly_limit' => $tenant->monthly_limit,
+                'total_submissions' => (int) $tenant->total_submissions,
+                'completed_submissions' => (int) $tenant->completed_submissions,
+                'failed_submissions' => (int) $tenant->failed_submissions,
+                'usage_percentage' => $tenant->monthly_limit > 0
+                    ? round(($tenant->total_submissions / $tenant->monthly_limit) * 100, 1)
+                    : 0,
+                'status' => $tenant->status,
+            ]);
+
+        return Inertia::render('Admin/Quota/Index', [
+            'tenants' => $tenants,
         ]);
     }
 

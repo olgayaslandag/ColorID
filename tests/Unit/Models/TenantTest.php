@@ -49,18 +49,6 @@ it('has submissions relationship', function () {
     expect($tenant->submissions->first()->uuid)->toBe($submission->uuid);
 });
 
-it('has palette groups relationship', function () {
-    $tenant = Tenant::factory()->create();
-    $paletteGroup = \App\Models\PaletteGroup::factory()->create([
-        'tenant_id' => $tenant->id,
-    ]);
-
-    $tenant->refresh();
-
-    expect($tenant->paletteGroups)->toHaveCount(1);
-    expect($tenant->paletteGroups->first()->id)->toBe($paletteGroup->id);
-});
-
 it('has tenant settings relationship', function () {
     $tenant = Tenant::factory()->create();
     $setting = \App\Models\TenantSetting::factory()->create([

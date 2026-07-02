@@ -17,57 +17,14 @@
      CONFIGURATION
      ======================================================================== */
   var API_BASE = '/api';
-  var MAX_IMAGES = 3;
+  var MAX_IMAGES = 1;
   var ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   var ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
   var MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
   var POLL_INTERVAL = 3000; // 3 seconds
   var PROMPT_MAX_CHARS = 155;
 
-  var SURFACES = [
-    { key: 'ic_duvar', label: '\u0130\xe7 Duvar' },
-    { key: 'dis_duvar', label: 'D\u0131\u015f Duvar' },
-    { key: 'tavan', label: 'Tavan' },
-    { key: 'ic_zemin', label: '\u0130\xe7 Zemin' },
-    { key: 'dis_zemin', label: 'D\u0131\u015f Zemin' },
-    { key: 'ahsap_kapi', label: 'Ah\u015fap Kap\u0131' },
-    { key: 'metal_kapi', label: 'Metal Kap\u0131' },
-    { key: 'pvc_pencere', label: 'PVC Pencere' },
-    { key: 'ahsap_pencere', label: 'Ah\u015fap Pencere' },
-    { key: 'mutfak_tezgahi', label: 'Mutfak Tezgah\u0131' },
-    { key: 'masa', label: 'Masa' },
-    { key: 'sandalye_koltuk', label: 'Sandalye / Koltuk' },
-    { key: 'dolap_ic', label: 'Dolap (\u0130\xe7)' },
-    { key: 'dolap_dis', label: 'Dolap (D\u0131\u015f)' },
-    { key: 'mobilya_ahsap', label: 'Mobilya (Ah\u015fap)' },
-    { key: 'mobilya_metal', label: 'Mobilya (Metal)' },
-    { key: 'korkuluk_parmaklik', label: 'Korkuluk / Parmakl\u0131k' },
-    { key: 'demir_kapi', label: 'Demir Kap\u0131' },
-    { key: 'kepenk', label: 'Kepenk' },
-    { key: 'bahce_citi', label: 'Bah\xe7e \xc7iti' },
-    { key: 'sera_camli_yuzey', label: 'Sera / Caml\u0131 Y\xfczey' },
-    { key: 'radyator_petek', label: 'Radyat\xf6r / Petek' },
-    { key: 'boru_tesisat', label: 'Boru / Tesisat' },
-    { key: 'garaj_zemini', label: 'Garaj Zemini' },
-    { key: 'havuz_kenari', label: 'Havuz Kenar\u0131' },
-    { key: 'teras_balkon', label: 'Teras / Balkon' },
-    { key: 'cati', label: '\xc7at\u0131' },
-    { key: 'sundurma', label: 'Sundurma' },
-    { key: 'ahsap_deck', label: 'Ah\u015fap Deck' },
-    { key: 'seramik_fayans', label: 'Seramik / Fayans' },
-    { key: 'sivali_yuzey', label: 'S\u0131val\u0131 Y\xfczey' },
-    { key: 'alcipan', label: 'Al\xe7\u0131pan' },
-    { key: 'kartonpiyer', label: 'Kartonpiyer' },
-    { key: 'kalorifer_boregi', label: 'Kalorifer B\xf6re\u011fi' },
-    { key: 'neme_maruz_yuzey_banyo', label: 'Neme Maruz Y\xfczey (Banyo)' },
-    { key: 'islak_hacim_mutfak', label: 'Islak Hacim (Mutfak)' },
-    { key: 'yangin_kapisi', label: 'Yang\u0131n Kap\u0131s\u0131' },
-    { key: 'tabela_levha', label: 'Tabela / Levha' },
-    { key: 'endustriyel_makine', label: 'End\xfcstriyel Makine' },
-    { key: 'arac_romork', label: 'Ara\xe7 / R\xf6mork' },
-    { key: 'gemi_tekne', label: 'Gemi / Tekne' },
-    { key: 'her_yer_stella_cok_amagli', label: 'Her Yer (Stella \xc7ok Ama\xe7l\u0131)' },
-  ];
+
 
   /* ========================================================================
      STATE
@@ -75,8 +32,13 @@
   var state = {
     step: 1,
     config: null,
-    palettes: [],
-    selectedPaletteId: null,
+    categories: [],
+    swatches: [],
+    selectedCategoryId: null,
+    selectedCategoryName: null,
+    selectedSwatchId: null,
+    selectedTenantId: null,
+    selectedProductId: null,
     form: {
       name: '',
       phone: '',
@@ -84,13 +46,14 @@
       email: '',
       prompt: ''
     },
-    surface: null,
     images: [],
     submissionUuid: null,
     submissionResult: null,
     pollingTimer: null,
     submitting: false,
-    error: null
+    error: null,
+    isAuthenticated: false,
+    userData: null
   };
 
   /* ========================================================================
@@ -206,10 +169,10 @@
     var typeOk = ALLOWED_FILE_TYPES.indexOf(file.type) !== -1;
     var extOk = ALLOWED_EXTENSIONS.indexOf(ext) !== -1;
     if (!typeOk && !extOk) {
-      return 'Only JPG, PNG, and WebP files are allowed.';
+      return 'Yaln\u0131zca JPG, PNG ve WebP dosyalar\u0131na izin verilir.';
     }
     if (file.size > MAX_FILE_SIZE) {
-      return 'File size must not exceed 5 MB.';
+      return 'Dosya boyutu 5 MB\u2019\u0131 ge\xe7emez.';
     }
     return null;
   }
@@ -226,15 +189,15 @@
 
     return fetch(url, options).then(function (response) {
       if (response.status === 429) {
-        throw new Error('Too many requests. Please wait a moment and try again.');
+        throw new Error('\xC7ok fazla istek. L\xfctfen biraz bekleyip tekrar deneyin.');
       }
       if (!response.ok) {
         return response.json().then(function (data) {
-          var message = data.message || data.error || 'An unexpected error occurred.';
+          var message = data.message || data.error || 'Beklenmeyen bir hata olu\u015ftu.';
           throw new Error(message);
         }).catch(function (err) {
           if (err instanceof SyntaxError) {
-            throw new Error('An unexpected error occurred. Please try again.');
+            throw new Error('Beklenmeyen bir hata olu\u015ftu. L\xfctfen tekrar deneyin.');
           }
           throw err;
         });
@@ -242,7 +205,7 @@
       return response.json();
     }).catch(function (err) {
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        throw new Error('Network error. Please check your internet connection.');
+        throw new Error('A\u011f hatas\u0131. \u0130nternet ba\u011flant\u0131n\u0131z\u0131 kontrol edin.');
       }
       throw err;
     });
@@ -252,8 +215,19 @@
     return apiFetch('/widget/config');
   }
 
-  function fetchPalettes() {
-    return apiFetch('/palettes');
+  function fetchCategories() {
+    return apiFetch('/categories');
+  }
+
+  function fetchSwatches(categoryId, tenantId, productId) {
+    var path = '/swatches?category_id=' + encodeURIComponent(categoryId);
+    if (tenantId) {
+      path += '&tenant_id=' + encodeURIComponent(tenantId);
+    }
+    if (productId) {
+      path += '&product_id=' + encodeURIComponent(productId);
+    }
+    return apiFetch(path);
   }
 
   function submitForm(formData) {
@@ -619,7 +593,8 @@
     },
     resultGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+      gridTemplateColumns: '1fr',
+      maxWidth: '600px',
       gap: '12px',
       marginTop: '12px'
     },
@@ -709,7 +684,7 @@
         el('div', { style: widgetStyles.spinner }),
         el('p', {
           style: { color: '#6b7280', fontSize: '13px', margin: '4px 0 0' }
-        }, message || 'Loading\u2026')
+        }, message || 'Y\xfckleniyor\u2026')
       ]
     );
     container.className = 'pb-fade-in';
@@ -733,12 +708,12 @@
   /* Step indicator */
   function renderStepIndicator(currentStep) {
     var steps = [
-      { num: 1, label: 'Info' },
-      { num: 2, label: 'Surface' },
-      { num: 3, label: 'Palette' },
-      { num: 4, label: 'Photos' },
-      { num: 5, label: 'Prompt' },
-      { num: 6, label: 'Submit' }
+      { num: 1, label: 'Bilgi' },
+      { num: 2, label: 'Kategori' },
+      { num: 3, label: 'Kartela' },
+      { num: 4, label: 'G\xf6rsel' },
+      { num: 5, label: '\u0130stek' },
+      { num: 6, label: 'G\xf6nder' }
     ];
     var pc = primaryColor();
     var sc = secondaryColor();
@@ -921,7 +896,7 @@
       style: Object.assign({}, widgetStyles.buttonPrimary, { backgroundColor: pc }),
       onMouseOver: function () { this.style.backgroundColor = darkenColor(pc, 10); },
       onMouseOut: function () { this.style.backgroundColor = pc; }
-    }, 'Next \u2192');
+    }, ' \u0130leri \u2192');
     nextBtn.addEventListener('click', function () {
       if (validateStep1()) {
         state.step = 2;
@@ -972,7 +947,7 @@
   }
 
   /* ========================================================================
-     STEP 2 — Surface Selection
+     STEP 2 — Category Selection (paint area)
      ======================================================================== */
   function renderStep2() {
     clearWidget();
@@ -988,26 +963,39 @@
     content.appendChild(
       el('p', {
         style: { fontSize: '13px', color: '#6b7280', margin: '0 0 12px' }
-      }, 'Boyanacak y\xfczeyi se\xe7in.')
+      }, 'Boyanacak yeri se\xe7in.')
     );
 
-    // Surface grid
+    // Category grid
     var grid = el('div', { style: widgetStyles.surfaceGrid });
-    SURFACES.forEach(function (surface) {
-      var isSelected = state.surface === surface.key;
-      var itemStyle = Object.assign({}, widgetStyles.surfaceItem);
-      if (isSelected) {
-        itemStyle = Object.assign(itemStyle, widgetStyles.surfaceItemSelected);
-        itemStyle.borderColor = pc;
-      }
-      var item = el('div', { style: itemStyle }, surface.label);
-      item.addEventListener('click', function () {
-        state.surface = surface.key;
-        renderStep2();
+    if (!state.categories || state.categories.length === 0) {
+      content.appendChild(
+        el('p', { style: { color: '#9ca3af', textAlign: 'center', padding: '20px' } },
+          'Kategori bulunamad\u0131.'
+        )
+      );
+    } else {
+      state.categories.forEach(function (cat) {
+        var isSelected = state.selectedCategoryId === cat.id;
+        var itemStyle = Object.assign({}, widgetStyles.surfaceItem);
+        if (isSelected) {
+          itemStyle = Object.assign(itemStyle, widgetStyles.surfaceItemSelected);
+          itemStyle.borderColor = pc;
+        }
+        var item = el('div', { style: itemStyle }, cat.name);
+        item.addEventListener('click', function () {
+          state.selectedCategoryId = cat.id;
+          state.selectedCategoryName = cat.name;
+                    state.selectedSwatchId = null;
+          state.selectedTenantId = null;
+          state.selectedProductId = null;
+          state.swatches = [];
+          renderStep2();
+        });
+        grid.appendChild(item);
       });
-      grid.appendChild(item);
-    });
-    content.appendChild(grid);
+      content.appendChild(grid);
+    }
 
     // Buttons
     var btnRow = el('div', { style: widgetStyles.buttonRow });
@@ -1015,7 +1003,7 @@
       style: Object.assign({}, widgetStyles.buttonSecondary),
       onMouseOver: function () { this.style.backgroundColor = '#e5e7eb'; },
       onMouseOut: function () { this.style.backgroundColor = '#f3f4f6'; }
-    }, '\u2190 Back');
+    }, '\u2190 Geri');
     backBtn.addEventListener('click', function () {
       state.step = 1;
       renderStep(1);
@@ -1025,10 +1013,10 @@
       style: Object.assign({}, widgetStyles.buttonPrimary, { backgroundColor: pc }),
       onMouseOver: function () { this.style.backgroundColor = darkenColor(pc, 10); },
       onMouseOut: function () { this.style.backgroundColor = pc; }
-    }, 'Next \u2192');
+    }, ' \u0130leri \u2192');
     nextBtn.addEventListener('click', function () {
-      if (!state.surface) {
-        showFieldError('pb-surface-error', 'L\xfctfen bir y\xfczey se\xe7in.');
+      if (!state.selectedCategoryId) {
+        showFieldError('pb-category-error', 'L\xfctfen bir yer se\xe7in.');
         return;
       }
       state.step = 3;
@@ -1038,7 +1026,7 @@
     btnRow.appendChild(backBtn);
     btnRow.appendChild(nextBtn);
     content.appendChild(btnRow);
-    content.appendChild(el('div', { id: 'pb-surface-error', style: widgetStyles.errorText }));
+    content.appendChild(el('div', { id: 'pb-category-error', style: widgetStyles.errorText }));
 
     wrapper.appendChild(content);
     render(wrapper);
@@ -1050,6 +1038,12 @@
   function renderStep3() {
     clearWidget();
     var pc = primaryColor();
+
+    // Auto-load swatches if not loaded for current category
+    if (!state.swatches || state.swatches.length === 0) {
+      loadSwatches(state.selectedCategoryId, state.selectedTenantId, state.selectedProductId);
+      return;
+    }
 
     var wrapper = el('div', {}, [
       renderStepIndicator(3),
@@ -1064,17 +1058,113 @@
       }, 'Tercih etti\u011finiz kartelay\u0131 se\xe7in (tek se\xe7im).')
     );
 
-    // Palette groups
-    if (!state.palettes || state.palettes.length === 0) {
+    // Filters
+    if (state.swatches && state.swatches.length > 0) {
+      var uniqueTenants = [];
+      var seenTenantIds = {};
+      var uniqueProducts = [];
+      var seenProductIds = {};
+
+      state.swatches.forEach(function (k) {
+        if (k.tenant_id && !seenTenantIds[k.tenant_id]) {
+          seenTenantIds[k.tenant_id] = true;
+          uniqueTenants.push({ id: k.tenant_id, name: k.tenant_name });
+        }
+        if (!seenProductIds[k.product_id]) {
+          seenProductIds[k.product_id] = true;
+          uniqueProducts.push({ id: k.product_id, name: k.product_name });
+        }
+      });
+
+      // Brand (tenant) filter
+      if (uniqueTenants.length > 0) {
+        var brandGroup = el('div', { style: widgetStyles.formGroup });
+
+        var brandLabel = el('label', {
+          style: widgetStyles.label,
+          htmlFor: 'pb-brand-filter'
+        }, 'Marka');
+
+        var brandSelect = el('select', {
+          id: 'pb-brand-filter',
+          style: Object.assign({}, widgetStyles.input, { appearance: 'auto' })
+        });
+
+        var allBrand = el('option', { value: '' }, 'T\xfcm\xfc');
+        brandSelect.appendChild(allBrand);
+
+        uniqueTenants.forEach(function (t) {
+          var opt = el('option', { value: t.id }, t.name);
+          if (state.selectedTenantId === t.id) {
+            opt.selected = true;
+          }
+          brandSelect.appendChild(opt);
+        });
+
+        brandSelect.addEventListener('change', function () {
+          var tid = this.value ? parseInt(this.value, 10) : null;
+          state.selectedTenantId = tid;
+          state.selectedProductId = null;
+          state.selectedSwatchId = null;
+          loadSwatches(state.selectedCategoryId, tid, null);
+        });
+
+        brandGroup.appendChild(brandLabel);
+        brandGroup.appendChild(brandSelect);
+        content.appendChild(brandGroup);
+      }
+
+      // Product (model) filter
+      if (uniqueProducts.length > 1) {
+        var modelGroup = el('div', { style: widgetStyles.formGroup });
+
+        var modelLabel = el('label', {
+          style: widgetStyles.label,
+          htmlFor: 'pb-product-filter'
+        }, 'Model Filtrele');
+
+        var modelSelect = el('select', {
+          id: 'pb-product-filter',
+          style: Object.assign({}, widgetStyles.input, { appearance: 'auto' })
+        });
+
+        var allModel = el('option', { value: '' }, 'T\xfcm Modeller');
+        modelSelect.appendChild(allModel);
+
+        uniqueProducts.forEach(function (p) {
+          var opt = el('option', { value: p.id }, p.name);
+          if (state.selectedProductId === p.id) {
+            opt.selected = true;
+          }
+          modelSelect.appendChild(opt);
+        });
+
+        modelSelect.addEventListener('change', function () {
+          var pid = this.value ? parseInt(this.value, 10) : null;
+          state.selectedProductId = pid;
+          state.selectedSwatchId = null;
+          loadSwatches(state.selectedCategoryId, state.selectedTenantId, pid);
+        });
+
+        modelGroup.appendChild(modelLabel);
+        modelGroup.appendChild(modelSelect);
+        content.appendChild(modelGroup);
+      }
+    }
+
+    // Swatch grid
+    if (!state.swatches || state.swatches.length === 0) {
       content.appendChild(
         el('p', { style: { color: '#9ca3af', textAlign: 'center', padding: '20px' } },
-          'No palettes available for this tenant.'
+          'Bu kategori i\xe7in kartela bulunamad\u0131.'
         )
       );
     } else {
-      state.palettes.forEach(function (group) {
-        content.appendChild(renderPaletteGroupSingle(group));
+      var grid = el('div', { style: widgetStyles.paletteGrid });
+      state.swatches.forEach(function (swatch) {
+        grid.appendChild(renderSwatchCard(swatch, pc));
       });
+      content.appendChild(grid);
     }
 
     // Buttons
@@ -1083,7 +1173,7 @@
       style: Object.assign({}, widgetStyles.buttonSecondary),
       onMouseOver: function () { this.style.backgroundColor = '#e5e7eb'; },
       onMouseOut: function () { this.style.backgroundColor = '#f3f4f6'; }
-    }, '\u2190 Back');
+    }, '\u2190 Geri');
     backBtn.addEventListener('click', function () {
       state.step = 2;
       renderStep(2);
@@ -1093,10 +1183,10 @@
       style: Object.assign({}, widgetStyles.buttonPrimary, { backgroundColor: pc }),
       onMouseOver: function () { this.style.backgroundColor = darkenColor(pc, 10); },
       onMouseOut: function () { this.style.backgroundColor = pc; }
-    }, 'Next \u2192');
+    }, ' \u0130leri \u2192');
     nextBtn.addEventListener('click', function () {
-      if (!state.selectedPaletteId) {
-        showFieldError('pb-palette-error', 'L\xfctfen bir kartela se\xe7in.');
+      if (!state.selectedSwatchId) {
+        showFieldError('pb-swatch-error', 'L\xfctfen bir kartela se\xe7in.');
         return;
       }
       state.step = 4;
@@ -1106,67 +1196,15 @@
     btnRow.appendChild(backBtn);
     btnRow.appendChild(nextBtn);
     content.appendChild(btnRow);
-    content.appendChild(el('div', { id: 'pb-palette-error', style: widgetStyles.errorText }));
+    content.appendChild(el('div', { id: 'pb-swatch-error', style: widgetStyles.errorText }));
 
     wrapper.appendChild(content);
     render(wrapper);
   }
 
-  function renderPaletteGroupSingle(group) {
-    var pc = primaryColor();
-    var isExpanded = true;
-    var groupContainer = el('div', { style: widgetStyles.paletteGroup });
-
-    var header = el('div', {
-      style: widgetStyles.paletteGroupHeader,
-      onMouseOver: function () { this.style.backgroundColor = '#f3f4f6'; },
-      onMouseOut: function () { this.style.backgroundColor = '#f9fafb'; }
-    });
-
-    var title = el('h4', { style: widgetStyles.paletteGroupTitle }, group.title || 'Untitled Group');
-    var arrow = el('span', {
-      style: {
-        transition: 'transform 0.2s',
-        fontSize: '14px',
-        color: '#9ca3af'
-      }
-    }, '\u25bc');
-
-    header.appendChild(title);
-    header.appendChild(arrow);
-    groupContainer.appendChild(header);
-
-    var body = el('div', { style: { display: isExpanded ? 'block' : 'none' } });
-    var grid = el('div', { style: widgetStyles.paletteGrid });
-
-    if (group.palettes && group.palettes.length > 0) {
-      group.palettes.forEach(function (palette) {
-        grid.appendChild(renderPaletteSwatchSingle(palette, pc));
-      });
-    } else {
-      grid.appendChild(
-        el('p', { style: { fontSize: '12px', color: '#9ca3af', gridColumn: '1 / -1', margin: '4px 0' } },
-          'No palettes in this group.'
-        )
-      );
-    }
-
-    body.appendChild(grid);
-    groupContainer.appendChild(body);
-
-    header.addEventListener('click', function () {
-      var isHidden = body.style.display === 'none';
-      body.style.display = isHidden ? 'block' : 'none';
-      arrow.textContent = isHidden ? '\u25bc' : '\u25b2';
-      arrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
-    });
-
-    return groupContainer;
-  }
-
-  function renderPaletteSwatchSingle(palette, pc) {
-    var isSelected = state.selectedPaletteId === palette.id;
-    var bgColor = palette.color_code || '#ccc';
+  function renderSwatchCard(swatchData, pc) {
+    var isSelected = state.selectedSwatchId === swatchData.id;
+    var bgColor = swatchData.type === 'hex' ? swatchData.value : '#ccc';
 
     var swatch = el('div', {
       style: Object.assign({}, widgetStyles.paletteSwatch, {
@@ -1175,11 +1213,11 @@
         boxShadow: isSelected ? '0 0 0 2px ' + pc : 'none',
         transform: isSelected ? 'scale(1.08)' : 'scale(1)'
       }),
-      title: palette.title || ''
+      title: swatchData.name
     });
 
-    if (!palette.color_code && palette.image_url) {
-      swatch.style.backgroundImage = 'url(' + palette.image_url + ')';
+    if (swatchData.type === 'image' && swatchData.image_url) {
+      swatch.style.backgroundImage = 'url(' + swatchData.image_url + ')';
       swatch.style.backgroundSize = 'cover';
     }
 
@@ -1188,16 +1226,26 @@
     }
 
     swatch.addEventListener('click', function () {
-      // Single select: toggle only if same, otherwise set
-      if (state.selectedPaletteId === palette.id) {
-        state.selectedPaletteId = null;
+      if (state.selectedSwatchId === swatchData.id) {
+        state.selectedSwatchId = null;
       } else {
-        state.selectedPaletteId = palette.id;
+        state.selectedSwatchId = swatchData.id;
       }
       renderStep3();
     });
 
     return swatch;
+  }
+
+  function loadSwatches(categoryId, tenantId, productId) {
+    fetchSwatches(categoryId, tenantId, productId).then(function (data) {
+      state.swatches = data.data || data || [];
+      renderStep3();
+    }).catch(function (err) {
+      console.error('[Photo Builder] Failed to load swatches:', err);
+      state.swatches = [];
+      renderStep3();
+    });
   }
 
   /* ========================================================================
@@ -1217,7 +1265,7 @@
     content.appendChild(
       el('p', {
         style: { fontSize: '13px', color: '#6b7280', margin: '0 0 12px' }
-      }, 'Upload up to ' + MAX_IMAGES + ' reference images (JPG, PNG, or WebP). Max 5 MB each.')
+      }, 'En fazla ' + MAX_IMAGES + ' g\xf6rsel y\xfckleyin (JPG, PNG, WebP). Her biri en fazla 5 MB.')
     );
 
     var dropZone = renderDropZone();
@@ -1236,7 +1284,7 @@
       style: Object.assign({}, widgetStyles.buttonSecondary),
       onMouseOver: function () { this.style.backgroundColor = '#e5e7eb'; },
       onMouseOut: function () { this.style.backgroundColor = '#f3f4f6'; }
-    }, '\u2190 Back');
+    }, '\u2190 Geri');
     backBtn.addEventListener('click', function () {
       state.step = 3;
       renderStep(3);
@@ -1246,10 +1294,10 @@
       style: Object.assign({}, widgetStyles.buttonPrimary, { backgroundColor: pc }),
       onMouseOver: function () { this.style.backgroundColor = darkenColor(pc, 10); },
       onMouseOut: function () { this.style.backgroundColor = pc; }
-    }, 'Next \u2192');
+    }, ' \u0130leri \u2192');
     nextBtn.addEventListener('click', function () {
       if (state.images.length === 0) {
-        showFieldError('pb-upload-error', 'Please upload at least one image.');
+        showFieldError('pb-upload-error', 'En az bir g\u00f6rsel y\u00fckleyin.');
         return;
       }
       state.step = 5;
@@ -1277,7 +1325,7 @@
     if (!canUpload) {
       dz.appendChild(
         el('p', { style: { color: '#6b7280', fontSize: '13px', margin: 0 } },
-          'Maximum ' + MAX_IMAGES + ' images reached.'
+          'En fazla ' + MAX_IMAGES + ' g\xf6rsel y\xfcklenebilir.'
         )
       );
       return dz;
@@ -1310,18 +1358,18 @@
     dz.appendChild(
       el('p', {
         style: { margin: '8px 0 4px', fontWeight: 600, fontSize: '14px', color: '#374151' }
-      }, 'Click to upload or drag and drop')
+      }, 'Y\u00fcklemek i\u00e7in t\u0131klay\u0131n veya s\u00fcr\u00fckleyin')
     );
     dz.appendChild(
       el('p', {
         style: { margin: 0, fontSize: '12px', color: '#9ca3af' }
-      }, 'JPG, PNG, or WebP (max 5 MB each)')
+      }, 'JPG, PNG veya WebP (en fazla 5 MB)')
     );
 
     var fileInput = el('input', {
       type: 'file',
       accept: ALLOWED_EXTENSIONS.join(','),
-      multiple: true,
+      multiple: false,
       style: { display: 'none' }
     });
     dz.appendChild(fileInput);
@@ -1371,7 +1419,7 @@
 
     for (var i = 0; i < files.length; i++) {
       if (state.images.length >= MAX_IMAGES) {
-        errors.push('Maximum ' + MAX_IMAGES + ' images allowed.');
+        errors.push('En fazla ' + MAX_IMAGES + ' g\u00f6rsel y\u00fcklenebilir.');
         break;
       }
       var file = files[i];
@@ -1419,7 +1467,7 @@
 
     var removeBtn = el('button', {
       style: Object.assign({}, widgetStyles.previewRemove),
-      title: 'Remove image'
+      title: 'G\xf6rseli Kald\u0131r'
     }, '\xd7');
     removeBtn.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -1473,7 +1521,7 @@
     }, 'Ekstra \u0130stekler (Opsiyonel)');
     var textarea = el('textarea', {
       id: 'pb-prompt',
-      placeholder: 'E.g., "Daha canl\u0131 renkler, g\xf6lge efektleri\u2026"',
+      placeholder: '\xd6rn. "Daha canl\u0131 renkler, g\xf6lge efektleri\u2026"',
       style: widgetStyles.textarea
     }, state.form.prompt);
     textarea.addEventListener('input', function (e) {
@@ -1502,7 +1550,7 @@
       style: Object.assign({}, widgetStyles.buttonSecondary),
       onMouseOver: function () { this.style.backgroundColor = '#e5e7eb'; },
       onMouseOut: function () { this.style.backgroundColor = '#f3f4f6'; }
-    }, '\u2190 Back');
+    }, '\u2190 Geri');
     backBtn.addEventListener('click', function () {
       state.step = 4;
       renderStep(4);
@@ -1512,7 +1560,7 @@
       style: Object.assign({}, widgetStyles.buttonPrimary, { backgroundColor: pc }),
       onMouseOver: function () { this.style.backgroundColor = darkenColor(pc, 10); },
       onMouseOut: function () { this.style.backgroundColor = pc; }
-    }, 'Next \u2192');
+    }, ' \u0130leri \u2192');
     nextBtn.addEventListener('click', function () {
       state.step = 6;
       renderStep(6);
@@ -1543,7 +1591,7 @@
     content.appendChild(
       el('h3', {
         style: { fontSize: '16px', fontWeight: 700, margin: '0 0 16px', color: '#1f2937' }
-      }, 'Review Your Submission')
+      }, 'Ba\u015fvurunuzu \u0130nceleyin')
     );
 
     var summary = el('div', {
@@ -1555,22 +1603,12 @@
       }
     });
 
-    // Find surface label
-    var surfaceLabel = state.surface;
-    SURFACES.forEach(function (s) {
-      if (s.key === state.surface) surfaceLabel = s.label;
-    });
-
-    // Find palette name
-    var paletteLabel = 'None';
-    if (state.selectedPaletteId && state.palettes) {
-      state.palettes.forEach(function (group) {
-        if (group.palettes) {
-          group.palettes.forEach(function (p) {
-            if (p.id === state.selectedPaletteId) {
-              paletteLabel = p.title || 'Palette #' + p.id;
-            }
-          });
+    // Find swatch name
+    var swatchLabel = 'None';
+    if (state.selectedSwatchId && state.swatches) {
+      state.swatches.forEach(function (k) {
+        if (k.id === state.selectedSwatchId) {
+          swatchLabel = k.name + ' (' + (k.product_name || '') + ')';
         }
       });
     }
@@ -1580,9 +1618,9 @@
       { label: 'Telefon', value: state.form.phone },
       { label: '\u015eehir', value: state.form.city },
       { label: 'E-Posta', value: state.form.email || '(opsiyonel)' },
-      { label: 'Y\xfczey', value: surfaceLabel },
-      { label: 'Kartela', value: paletteLabel },
-      { label: 'Images', value: state.images.length + ' file(s)' }
+      { label: 'Kategori', value: state.selectedCategoryName || 'Y\xfczey' },
+      { label: 'Kartela', value: swatchLabel },
+      { label: 'G\xf6rsel', value: state.images.length + ' dosya' }
     ];
 
     fields.forEach(function (field) {
@@ -1594,7 +1632,7 @@
 
     if (state.form.prompt) {
       summary.appendChild(el('div', { style: widgetStyles.summaryRow }, [
-        el('span', { style: widgetStyles.summaryLabel }, 'Prompt'),
+        el('span', { style: widgetStyles.summaryLabel }, '\u0130stek'),
         el('span', { style: Object.assign({}, widgetStyles.summaryValue, { fontSize: '12px', fontWeight: 400 }) }, sanitizeText(state.form.prompt))
       ]));
     }
@@ -1608,7 +1646,7 @@
       style: Object.assign({}, widgetStyles.buttonSecondary),
       onMouseOver: function () { this.style.backgroundColor = '#e5e7eb'; },
       onMouseOut: function () { this.style.backgroundColor = '#f3f4f6'; }
-    }, '\u2190 Back');
+    }, '\u2190 Geri');
     backBtn.addEventListener('click', function () {
       state.step = 5;
       renderStep(5);
@@ -1618,7 +1656,7 @@
       style: Object.assign({}, widgetStyles.buttonPrimary, { backgroundColor: pc, padding: '12px 32px' }),
       onMouseOver: function () { this.style.backgroundColor = darkenColor(pc, 10); },
       onMouseOut: function () { this.style.backgroundColor = pc; }
-    }, 'Submit');
+    }, 'G\xf6nder');
     submitBtn.addEventListener('click', function () {
       handleSubmit();
     });
@@ -1649,8 +1687,8 @@
     if (state.form.email && state.form.email.trim()) {
       formData.append('email', state.form.email.trim());
     }
-    formData.append('surface', state.surface);
-    formData.append('palette_id', String(state.selectedPaletteId));
+    formData.append('category_id', String(state.selectedCategoryId));
+    formData.append('swatch_id', String(state.selectedSwatchId));
 
     if (state.form.prompt && state.form.prompt.trim()) {
       formData.append('prompt', state.form.prompt.trim());
@@ -1669,7 +1707,7 @@
       startPolling();
     }).catch(function (err) {
       state.submitting = false;
-      var errorMsg = err.message || 'Submission failed. Please try again.';
+      var errorMsg = err.message || 'Gönderi başarısız. Lütfen tekrar deneyin.';
       showFieldError('pb-submit-error', errorMsg);
       state.step = 6;
       renderStep(6);
@@ -1695,12 +1733,12 @@
     loading.appendChild(el('div', { style: widgetStyles.spinner }));
     loading.appendChild(
       el('p', { style: { fontWeight: 600, fontSize: '15px', color: '#1f2937', margin: '0 0 4px' } },
-        'Submitting your request\u2026'
+        '\u0130ste\u011finiz g\xf6nderiliyor\u2026'
       )
     );
     loading.appendChild(
       el('p', { style: { fontSize: '13px', color: '#6b7280', margin: '0 0 8px' } },
-        'Please wait while we process your images.'
+        'L\xfctfen g\xf6r\xfcnt\xfcleriniz i\u015flenirken bekleyin.'
       )
     );
 
@@ -1716,7 +1754,7 @@
 
     loading.appendChild(
       el('p', { id: 'pb-progress-text', style: { fontSize: '12px', color: '#9ca3af', margin: '8px 0 0' } },
-        'Uploading & queuing\u2026'
+        'Y\xfckleniyor ve s\u0131raya al\u0131n\u0131yor\u2026'
       )
     );
 
@@ -1737,7 +1775,7 @@
 
     var pc = primaryColor();
 
-    updateProgressMessage('Processing your images\u2026');
+    updateProgressMessage('G\u00f6rselleriniz i\u015fleniyor\u2026');
 
     var fill = widgetEl.querySelector('.pb-progress-fill');
     if (fill) {
@@ -1760,15 +1798,15 @@
         if (status === 'failed') {
           clearInterval(state.pollingTimer);
           state.pollingTimer = null;
-          renderSubmissionError('Image generation failed. Please try again.');
+          renderSubmissionError('G\u00f6rsel olu\u015fturma ba\u015far\u0131sız. Lütfen tekrar deneyin.');
           return;
         }
 
         var messages = {
-          'pending': 'Queued for processing\u2026',
-          'processing': 'AI is colorizing your images\u2026'
+          'pending': 'Kuyruğa alındı\u2026',
+          'processing': 'AI g\u00f6rsellerinizi renklendiriyor\u2026'
         };
-        updateProgressMessage(messages[status] || 'Processing\u2026');
+        updateProgressMessage(messages[status] || '\u0130\u015flemiyor\u2026');
 
         if (fill) {
           fill.style.width = '85%';
@@ -1798,9 +1836,9 @@
         [
           el('span', { style: { flexShrink: 0, fontSize: '18px' } }, '\u2713'),
           el('div', {}, [
-            el('p', { style: { fontWeight: 600, margin: '0 0 2px' } }, 'Your images are ready!'),
+            el('p', { style: { fontWeight: 600, margin: '0 0 2px' } }, 'G\u00f6rselleriniz haz\u0131r!'),
             el('p', { style: { fontSize: '12px', margin: '0', color: '#16a34a' } },
-              'The AI has finished colorizing your photos.'
+              'Yapay zeka foto\u011fraflar\u0131n\u0131z\u0131 renklendirmeyi tamamlad\u0131.'
             )
           ])
         ]
@@ -1829,12 +1867,11 @@
         if (generatedUrl) {
           var imgEl = el('img', {
             src: generatedUrl,
-            alt: 'Generated image',
+            alt: 'Olu\u015fturulan g\u00f6rsel',
             style: {
               width: '100%',
               display: 'block',
-              aspectRatio: '1',
-              objectFit: 'cover'
+              borderRadius: '10px'
             },
             loading: 'lazy'
           });
@@ -1849,7 +1886,7 @@
               color: '#6b7280',
               textAlign: 'center'
             }
-          }, 'Generated')
+          }, 'Olu\u015fturuldu')
         );
 
         grid.appendChild(card);
@@ -1859,7 +1896,7 @@
     } else {
       wrapper.appendChild(
         el('p', { style: { textAlign: 'center', color: '#6b7280', padding: '20px' } },
-          'No generated images found.'
+          'Olu\u015fturulan g\xf6rsel bulunamad\u0131.'
         )
       );
     }
@@ -1869,7 +1906,7 @@
       style: Object.assign({}, widgetStyles.buttonPrimary, { backgroundColor: pc }),
       onMouseOver: function () { this.style.backgroundColor = darkenColor(pc, 10); },
       onMouseOut: function () { this.style.backgroundColor = pc; }
-    }, 'Start New Request');
+    }, 'Yeni \u0130stek Ba\u015flat');
     resetBtn.addEventListener('click', function () {
       resetWidget();
     });
@@ -1890,8 +1927,8 @@
         [
           el('span', { style: { flexShrink: 0, fontSize: '18px' } }, '\u26a0'),
           el('div', {}, [
-            el('p', { style: { fontWeight: 600, margin: '0 0 2px' } }, 'Generation Failed'),
-            el('p', { style: { fontSize: '12px', margin: '0', color: '#dc2626' } }, message || 'Something went wrong during image generation.')
+            el('p', { style: { fontWeight: 600, margin: '0 0 2px' } }, 'Olu\u015fturma Ba\u015far\u0131s\u0131'),
+            el('p', { style: { fontSize: '12px', margin: '0', color: '#dc2626' } }, message || 'G\u00f6rsel olu\u015fturma s\u0131ras\u0131nda bir hata olu\u015ftu.')
           ])
         ]
       )
@@ -1922,8 +1959,12 @@
     }
 
     state.step = 1;
-    state.selectedPaletteId = null;
-    state.surface = null;
+    state.selectedCategoryId = null;
+    state.selectedCategoryName = null;
+    state.selectedSwatchId = null;
+    state.selectedTenantId = null;
+    state.selectedProductId = null;
+    state.swatches = [];
     state.form = { name: '', phone: '', city: '', email: '', prompt: '' };
     state.images = [];
     state.submissionUuid = null;
@@ -1966,6 +2007,20 @@
     }
     container.setAttribute('data-pb-initialized', 'true');
 
+    // Check if user is authenticated
+    if (container.dataset.user) {
+        try {
+            state.userData = JSON.parse(container.dataset.user);
+            state.isAuthenticated = true;
+            state.form.name = state.userData.name || '';
+            state.form.email = state.userData.email || '';
+            state.form.phone = state.userData.phone || '';
+            state.form.city = state.userData.city || '';
+        } catch (e) {
+            console.warn('[Photo Builder] Invalid user data:', e);
+        }
+    }
+
     injectKeyframes();
 
     widgetEl = el('div', {
@@ -1974,22 +2029,19 @@
     });
     container.appendChild(widgetEl);
 
-    renderLoading('Loading widget\u2026');
+    renderLoading('Widget y\xfckleniyor\u2026');
 
     Promise.all([
       fetchConfig(),
-      fetchPalettes()
+      fetchCategories()
     ]).then(function (results) {
       state.config = results[0].data || results[0];
-      state.palettes = results[1].data || results[1];
+      state.categories = results[1].data || results[1];
 
-      var pc = primaryColor();
-      var sc = secondaryColor();
-
-      renderStep(1);
+      renderStep(state.isAuthenticated ? 2 : 1);
     }).catch(function (err) {
       console.error('[Photo Builder] Initialization error:', err);
-      var message = err.message || 'Failed to load widget configuration.';
+      var message = err.message || 'Widget yap\u0131land\u0131rmas\u0131 y\xfcklenemedi.';
       renderError(message);
     });
   }

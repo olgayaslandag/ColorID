@@ -4,7 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Welcome({ canLogin, canRegister, laravelVersion, phpVersion }) {
     const { __ } = useTranslation();
-    const { auth } = usePage().props;
+    const { auth, isAdmin } = usePage().props;
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
@@ -21,27 +21,26 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
     const stats = [
         { value: '10K+', label: __('messages.stats_rooms_visualized') },
         { value: '98%', label: __('messages.stats_satisfaction_rate') },
-        { value: '500+', label: __('messages.stats_color_palettes') },
         { value: '30s', label: __('messages.stats_avg_processing') },
     ];
 
     const features = [
         {
-            icon: '<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>',
+            icon: <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>,
             title: __('messages.feature_upload_title'),
             desc: __('messages.feature_upload_desc'),
             bg: 'bg-blue-50',
             text: 'text-blue-600',
         },
         {
-            icon: '<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5V15m0 0l3.75 3.75M9 15l-3.75-3.75M16.5 12.75V18m0 0l2.25-2.25M16.5 18l-2.25-2.25M6.75 19.5a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm9.75-9a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" /></svg>',
+            icon: <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5V15m0 0l3.75 3.75M9 15l-3.75-3.75M16.5 12.75V18m0 0l2.25-2.25M16.5 18l-2.25-2.25M6.75 19.5a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm9.75-9a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" /></svg>,
             title: __('messages.feature_pick_color_title'),
             desc: __('messages.feature_pick_color_desc'),
             bg: 'bg-purple-50',
             text: 'text-purple-600',
         },
         {
-            icon: '<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>',
+            icon: <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>,
             title: __('messages.feature_ai_generates_title'),
             desc: __('messages.feature_ai_generates_desc'),
             bg: 'bg-emerald-50',
@@ -50,9 +49,9 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
     ];
 
     const steps = [
-        { num: '01', title: __('messages.step_1_title'), desc: __('messages.step_1_desc'), icon: '<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>' },
-        { num: '02', title: __('messages.step_2_title'), desc: __('messages.step_2_desc'), icon: '<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" /></svg>' },
-        { num: '03', title: __('messages.step_3_title'), desc: __('messages.step_3_desc'), icon: '<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>' },
+        { num: '01', title: __('messages.step_1_title'), desc: __('messages.step_1_desc'), icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg> },
+        { num: '02', title: __('messages.step_2_title'), desc: __('messages.step_2_desc'), icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" /></svg> },
+        { num: '03', title: __('messages.step_3_title'), desc: __('messages.step_3_desc'), icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg> },
     ];
 
     const testimonials = [
@@ -94,18 +93,33 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                         </Link>
 
                         <nav className="d-none d-md-flex align-items-center gap-1">
-                            <a href="#features" className="btn-ghost small">{__('messages.nav_features')}</a>
-                            <a href="#how-it-works" className="btn-ghost small">{__('messages.nav_how_it_works')}</a>
-                            <a href="#testimonials" className="btn-ghost small">{__('messages.nav_testimonials')}</a>
-                            <a href="#faq" className="btn-ghost small">{__('messages.nav_faq')}</a>
+                            <a href="#features" className="btn btn-sm btn-ghost rounded-4">{__('messages.nav_features')}</a>
+                            <a href="#how-it-works" className="btn btn-sm btn-ghost rounded-4">{__('messages.nav_how_it_works')}</a>
+                            <a href="#testimonials" className="btn btn-sm btn-ghost rounded-4">{__('messages.nav_testimonials')}</a>
+                            <a href="#faq" className="btn btn-sm btn-ghost rounded-4">{__('messages.nav_faq')}</a>
                         </nav>
 
-                        <div className="d-none d-md-flex align-items-center gap-3">
+                        <div className="d-none d-md-flex align-items-center gap-2">
                             {canLogin && (
                                 auth.user ? (
-                                    <Link href={route('visualize')} className="btn-primary small px-4 py-2">
-                                        {__('messages.nav_visualize')}
-                                    </Link>
+                                    <div className="d-flex align-items-center gap-2">
+                                        {isAdmin && (
+                                            <Link href={route('admin.dashboard')} className="btn btn-sm btn-ghost rounded-4">
+                                                {__('messages.nav_dashboard')}
+                                            </Link>
+                                        )}
+                                        <Link href={route('visualize')} className="btn btn-sm btn-primary rounded-4">
+                                            {__('messages.nav_visualize')}
+                                        </Link>
+                                        <Link
+                                            href={route('logout')}
+                                            method="post"
+                                            as="button"
+                                            className="btn btn-secondary btn-sm rounded-4"
+                                        >
+                                            {__('messages.nav_logout')}
+                                        </Link>
+                                    </div>
                                 ) : (
                                     <>
                                         <Link href={route('login')} className="btn-ghost small">
@@ -155,9 +169,25 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                     <div className="mt-4 pt-4 border-top border-light d-flex flex-column gap-2">
                         {canLogin && (
                             auth.user ? (
-                                <Link href={route('visualize')} onClick={() => setMobileMenuOpen(false)} className="btn-primary w-100 justify-content-center">
-                                    {__('messages.nav_visualize')}
-                                </Link>
+                                <div className="d-flex flex-column gap-2">
+                                    {isAdmin && (
+                                        <Link href={route('admin.dashboard')} onClick={() => setMobileMenuOpen(false)} className="btn-ghost small px-3 py-2 w-100 justify-content-center">
+                                            {__('messages.nav_dashboard')}
+                                        </Link>
+                                    )}
+                                    <Link href={route('visualize')} onClick={() => setMobileMenuOpen(false)} className="btn-primary w-100 justify-content-center">
+                                        {__('messages.nav_visualize')}
+                                    </Link>
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="btn-ghost small px-3 py-2 w-100 justify-content-center"
+                                    >
+                                        {__('messages.nav_logout')}
+                                    </Link>
+                                </div>
                             ) : (
                                 <>
                                     <Link href={route('login')} onClick={() => setMobileMenuOpen(false)} className="btn-secondary w-100 justify-content-center small">
@@ -236,7 +266,7 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
 
             <section className="section-padding position-relative">
                 <div className="container-wide">
-                    <div className="row row-cols-2 row-cols-md-4 g-4">
+                    <div className="row row-cols-3 row-cols-md-3 g-5 justify-content-center">
                         {stats.map((stat, i) => (
                             <div key={stat.label} className="card-hover p-4 p-sm-5 text-center animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
                                 <p className="gradient-text-simple fw-bold" style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)' }}>{stat.value}</p>
@@ -254,10 +284,12 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                         <h2 className="fw-bold text-body text-balance" style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em' }}>{__('messages.features_title')}</h2>
                         <p className="mt-3 text-muted" style={{ fontSize: '1.125rem' }}>{__('messages.features_subtitle')}</p>
                     </div>
-                    <div className="mt-5 row g-4 g-sm-5 row-cols-md-3">
+                    <div className="mt-5 row g-4 g-sm-5 row-cols-md-3 justify-content-center">
                         {features.map((feature, i) => (
                             <div key={feature.title} className="position-relative card-hover p-5 animate-fade-in-up" style={{ animationDelay: `${i * 150}ms` }}>
-                                <div className={`d-inline-flex align-items-center justify-content-center rounded-4 ${feature.bg} ${feature.text}`} style={{ width: '3.5rem', height: '3.5rem', marginBottom: '1.25rem' }} dangerouslySetInnerHTML={{ __html: feature.icon }} />
+                                <div className={`d-inline-flex align-items-center justify-content-center rounded-4 ${feature.bg} ${feature.text}`} style={{ width: '3.5rem', height: '3.5rem', marginBottom: '1.25rem' }}>
+                                    {feature.icon}
+                                </div>
                                 <h3 className="fs-5 fw-semibold text-body">{feature.title}</h3>
                                 <p className="mt-2 text-secondary lh-lg">{feature.desc}</p>
                             </div>
@@ -281,7 +313,7 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                         {steps.map((step, i) => (
                             <div key={step.num} className="text-center animate-fade-in-up" style={{ animationDelay: `${i * 200}ms` }}>
                                 <div className="mx-auto d-flex align-items-center justify-content-center rounded-4 bg-white shadow-lg border border-secondary mb-4" style={{ width: '4rem', height: '4rem', zIndex: 10 }}>
-                                    <span className="text-brand-600" dangerouslySetInnerHTML={{ __html: step.icon }} />
+                                    <span className="text-brand-600">{step.icon}</span>
                                 </div>
                                 <div className="d-inline-flex align-items-center justify-content-center rounded-circle bg-brand-100 text-brand-700 small fw-bold mb-3" style={{ width: '1.75rem', height: '1.75rem' }}>
                                     {step.num}
@@ -390,12 +422,12 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                         <h2 className="fw-bold text-body text-balance" style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em' }}>{__('messages.faq_title')}</h2>
                         <p className="mt-3 text-muted" style={{ fontSize: '1.125rem' }}>{__('messages.faq_subtitle')}</p>
                     </div>
-                    <div className="mt-5 d-flex flex-column gap-2">
+                    <div className="mt-5 border rounded-2 overflow-hidden">
                         {faqs.map((faq, i) => (
-                            <div key={i} className={`card overflow-hidden transition-all duration-200 ${activeFaq === i ? 'border-brand-200 shadow' : ''}`}>
+                            <div key={i} className={`${i !== faqs.length - 1 ? 'border-bottom' : ''}`}>
                                 <button
                                     onClick={() => toggleFaq(i)}
-                                    className="d-flex align-items-center justify-content-between w-100 px-4 py-4 text-start transition hover-bg-light"
+                                    className="d-flex align-items-center justify-content-between w-100 px-4 py-4 text-start transition bg-transparent border-0"
                                 >
                                     <span className="fw-semibold text-body pe-3">{faq.q}</span>
                                     <svg
@@ -432,12 +464,19 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                         </p>
                         <div className="mt-5 d-flex flex-column flex-sm-row align-items-center justify-content-center gap-3">
                             {auth.user ? (
-                                <Link href={route('visualize')} className="d-inline-flex align-items-center justify-content-center gap-2 rounded-4 bg-white px-5 py-3 fw-semibold text-brand-700 shadow-lg transition-all duration-200 hover-bg-brand-50 active-translate-y-0">
-                                    {__('messages.cta_button')}
-                                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                    </svg>
-                                </Link>
+                                <div className="d-flex flex-column flex-sm-row gap-3">
+                                    {isAdmin && (
+                                        <Link href={route('admin.dashboard')} className="d-inline-flex align-items-center justify-content-center gap-2 rounded-4 bg-white px-5 py-3 fw-semibold text-brand-700 shadow-lg transition-all duration-200 hover-bg-brand-50 active-translate-y-0">
+                                            {__('messages.nav_dashboard')}
+                                        </Link>
+                                    )}
+                                    <Link href={route('visualize')} className="d-inline-flex align-items-center justify-content-center gap-2 rounded-4 bg-white px-5 py-3 fw-semibold text-brand-700 shadow-lg transition-all duration-200 hover-bg-brand-50 active-translate-y-0">
+                                        {__('messages.cta_button')}
+                                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                        </svg>
+                                    </Link>
+                                </div>
                             ) : (
                                 <>
                                     {canRegister && (
@@ -474,34 +513,34 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                                 </div>
                                 <span className="fw-bold text-white">ColorID</span>
                             </Link>
-                            <p className="mt-3 small text-muted lh-lg" style={{ maxWidth: '24rem' }}>
+                            <p className="mt-3 small text-white lh-lg" style={{ maxWidth: '24rem' }}>
                                 {__('messages.footer_description')}
                             </p>
                         </div>
                         <div>
                             <h3 className="small fw-semibold text-white text-uppercase" style={{ letterSpacing: '0.05em' }}>{__('messages.nav_product')}</h3>
                             <ul className="mt-3 d-flex flex-column gap-2 list-unstyled">
-                                <li><a href="#features" className="small text-muted text-decoration-none hover-text-white transition">{__('messages.nav_features')}</a></li>
-                                <li><a href="#how-it-works" className="small text-muted text-decoration-none hover-text-white transition">{__('messages.nav_how_it_works')}</a></li>
-                                <li><a href="#testimonials" className="small text-muted text-decoration-none hover-text-white transition">{__('messages.nav_testimonials')}</a></li>
-                                <li><a href="#faq" className="small text-muted text-decoration-none hover-text-white transition">{__('messages.nav_faq')}</a></li>
+                                <li><a href="#features" className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.nav_features')}</a></li>
+                                <li><a href="#how-it-works" className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.nav_how_it_works')}</a></li>
+                                <li><a href="#testimonials" className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.nav_testimonials')}</a></li>
+                                <li><a href="#faq" className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.nav_faq')}</a></li>
                             </ul>
                         </div>
                         <div>
                             <h3 className="small fw-semibold text-white text-uppercase" style={{ letterSpacing: '0.05em' }}>{__('messages.nav_company')}</h3>
                             <ul className="mt-3 d-flex flex-column gap-2 list-unstyled">
-                                {canRegister && <li><Link href={route('register')} className="small text-muted text-decoration-none hover-text-white transition">{__('messages.nav_get_started')}</Link></li>}
-                                {canLogin && <li><Link href={route('login')} className="small text-muted text-decoration-none hover-text-white transition">{__('messages.nav_sign_in')}</Link></li>}
+                                {canRegister && <li><Link href={route('register')} className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.nav_get_started')}</Link></li>}
+                                {canLogin && <li><Link href={route('login')} className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.nav_sign_in')}</Link></li>}
                             </ul>
                         </div>
                     </div>
                     <div className="mt-5 pt-4 border-top d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3" style={{ borderColor: '#1f2937 !important' }}>
-                        <p className="small text-muted mb-0">
+                        <p className="small text-white mb-0">
                             {__('messages.ui_copyright', { year: String(new Date().getFullYear()) })}
                         </p>
                         <div className="d-flex align-items-center gap-4">
-                            <a href="#" className="small text-muted text-decoration-none hover-text-gray-300 transition">{__('messages.footer_privacy_policy')}</a>
-                            <a href="#" className="small text-muted text-decoration-none hover-text-gray-300 transition">{__('messages.footer_terms_of_service')}</a>
+                            <a href="#" className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.footer_privacy_policy')}</a>
+                            <a href="#" className="small text-white text-decoration-none hover-text-gray-300 transition">{__('messages.footer_terms_of_service')}</a>
                         </div>
                     </div>
                 </div>

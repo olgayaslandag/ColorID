@@ -12,15 +12,27 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([\App\Console\Commands\TestImageEdit::class])
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(function (Request $request) {
+            $locale = $request->segment(1);
+
+            if (!in_array($locale, array_keys(config('app.available_locales', ['en' => 'English'])))) {
+                $locale = session('locale', app()->getLocale());
+            }
+
+            return route('login', ['locale' => $locale]);
+        });
+
         $middleware->web(append: [
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->alias([
             'tenant' => \App\Http\Middleware\IdentifyTenant::class,
-            'validate.upload.domain' => \App\Http\Middleware\ValidateUploadDomain::class,
-            'rate_limit_uploads' => \App\Http\Middleware\RateLimitUploads::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
         $middleware->web(append: [

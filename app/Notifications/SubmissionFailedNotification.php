@@ -43,7 +43,7 @@ class SubmissionFailedNotification extends Notification
             ->line('Prompt: '.$this->submission->prompt)
             ->line('Error: '.$this->errorMessage)
             ->line('Please try again or contact support if the issue persists.')
-            ->action('Retry', url('/submissions/'.$this->submission->uuid))
+            ->action('Retry', url('/'.app()->getLocale().'/admin/submissions/'.$this->submission->uuid))
             ->line('We apologise for the inconvenience.');
     }
 

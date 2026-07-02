@@ -8,11 +8,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 class Tenant extends Model
 {
     /** @use HasFactory<\Database\Factories\TenantFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -29,7 +33,16 @@ class Tenant extends Model
         return [
             'status' => 'boolean',
             'monthly_limit' => 'integer',
+            'deleted_at' => 'datetime',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 
     /**
@@ -59,13 +72,13 @@ class Tenant extends Model
         return $this->hasMany(Submission::class);
     }
 
-    public function paletteGroups(): HasMany
-    {
-        return $this->hasMany(PaletteGroup::class);
-    }
-
     public function settings(): HasMany
     {
         return $this->hasMany(TenantSetting::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 }

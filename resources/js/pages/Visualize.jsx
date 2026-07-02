@@ -1,9 +1,10 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Visualize() {
     const { __ } = useTranslation();
+    const { auth } = usePage().props;
 
     useEffect(() => {
         const script = document.createElement('script');
@@ -28,15 +29,16 @@ export default function Visualize() {
                     </div>
 
                     <div className="overflow-hidden rounded-4 bg-white shadow-lg border border-secondary">
-                        <div className="p-1">
-                            <div className="d-flex align-items-center gap-1 px-4 py-3 border-bottom border-light">
-                                <span className="rounded-circle bg-danger" style={{ width: '0.75rem', height: '0.75rem' }} />
-                                <span className="rounded-circle bg-warning" style={{ width: '0.75rem', height: '0.75rem' }} />
-                                <span className="rounded-circle bg-success" style={{ width: '0.75rem', height: '0.75rem' }} />
-                                <span className="ms-2 text-muted font-monospace small">{__('messages.visualize_photo_builder')}</span>
-                            </div>
-                            <div id="photo_builder" className="p-4" />
-                        </div>
+                        <div
+                            id="photo_builder"
+                            className="p-4"
+                            {...(auth.user ? { 'data-user': JSON.stringify({
+                                name: auth.user.name,
+                                email: auth.user.email || '',
+                                phone: auth.user.phone || '',
+                                city: auth.user.city || '',
+                            })} : {})}
+                        />
                     </div>
 
                     <div className="mt-5 d-flex align-items-center justify-content-center gap-2 small text-muted">

@@ -339,7 +339,6 @@ a:hover {
 
 .origin-left { transform-origin: left; }
 
-.scale-105 { transform: scale(1.05); }
 .scale-110 { transform: scale(1.1); }
 .scale-x-0 { transform: scaleX(0); }
 .scale-x-100 { transform: scaleX(1); }

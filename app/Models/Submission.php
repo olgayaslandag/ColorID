@@ -9,10 +9,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use App\Models\Swatch;
 
 class Submission extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes, LogsActivity;
 
     /**
      * The primary key for the model.
@@ -43,7 +47,8 @@ class Submission extends Model
         'email',
         'city',
         'surface',
-        'palette_id',
+        'category_id',
+        'swatch_id',
         'prompt',
         'status',
     ];
@@ -52,7 +57,16 @@ class Submission extends Model
     {
         return [
             'status' => 'string',
+            'deleted_at' => 'datetime',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 
     /*
@@ -92,8 +106,13 @@ class Submission extends Model
         return $this->hasMany(SubmissionImage::class, 'submission_id', 'uuid');
     }
 
-    public function palette(): BelongsTo
+    public function category(): BelongsTo
     {
-        return $this->belongsTo(Palette::class);
+        return $this->belongsTo(ProductCategory::class, 'category_id');
+    }
+
+    public function swatch(): BelongsTo
+    {
+        return $this->belongsTo(Swatch::class, 'swatch_id');
     }
 }

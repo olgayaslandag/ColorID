@@ -38,9 +38,9 @@ return [
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
         'endpoint' => env('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/images/generations'),
-        'model' => env('OPENAI_MODEL', 'gpt-image-2'),
+        'model' => env('OPENAI_MODEL', 'dall-e-3'),
         'size' => env('OPENAI_IMAGE_SIZE', '1024x1024'),
-        'quality' => env('OPENAI_IMAGE_QUALITY', 'medium'),
+        'quality' => env('OPENAI_IMAGE_QUALITY', 'standard'),
     ],
 
 ];

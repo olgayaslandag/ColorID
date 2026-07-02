@@ -2,12 +2,8 @@
 
 namespace Tests\Feature\Api;
 
-use Tests\TestCase;
 use App\Models\Tenant;
 use App\Services\TenantManager;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(TestCase::class, RefreshDatabase::class);
 
 it('returns widget config for a valid tenant', function () {
     $tenant = Tenant::factory()->create([

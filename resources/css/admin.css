@@ -1,0 +1,126 @@
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+@import '../sbadmin/css/sb-admin-2.min.css';
+
+.brand-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s ease, opacity 0.25s ease;
+  opacity: 0;
+}
+
+.brand-accordion-content.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.brand-accordion-content > .accordion-inner {
+  overflow: hidden;
+}
+
+.accordion-chevron {
+  transition: transform 0.3s ease;
+}
+
+.accordion-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.swatch-card {
+  background: #fff;
+  border: 1px solid #e3e6f0;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.swatch-card:hover {
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+.swatch-card.dragging {
+  opacity: 0.5;
+  z-index: 100;
+}
+
+.swatch-card .drag-handle {
+  cursor: grab;
+  color: #b0b0b0;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.swatch-card .drag-handle:hover {
+  color: #4e73df;
+}
+
+.swatch-card .drag-handle:active {
+  cursor: grabbing;
+}
+
+.swatch-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  border: 1px solid #e3e6f0;
+  flex-shrink: 0;
+}
+
+.swatch-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e3e6f0;
+  flex-shrink: 0;
+}
+
+.swatch-edit-input {
+  width: 100%;
+}
+
+.infinite-scroll-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.nested-border-category {
+  border-left: 3px solid #4e73df;
+}
+
+.nested-border-product {
+  border-left: 3px solid #1cc88a;
+}
+
+.nested-border-swatch {
+  border-left: 3px solid #f6c23e;
+}
+
+.search-brand-input:focus {
+  border-color: #4e73df;
+  box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.topbar .nav-link:focus,
+.topbar .nav-link:focus-visible,
+.topbar .dropdown-toggle:focus,
+.topbar .dropdown-toggle:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.topbar .nav-link:active,
+.topbar .dropdown-toggle:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.topbar .dropdown-toggle::after {
+  display: none;
+}

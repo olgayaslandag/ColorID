@@ -41,4 +41,12 @@ class TenantManager
     {
         return $this->tenant !== null && $this->tenant->status === true;
     }
+
+    /**
+     * Reset the tenant state (for queue workers where singletons persist).
+     */
+    public function reset(): void
+    {
+        $this->tenant = null;
+    }
 }

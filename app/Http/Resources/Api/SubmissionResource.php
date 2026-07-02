@@ -23,6 +23,8 @@ class SubmissionResource extends JsonResource
             'email' => $this->resource->email,
             'city' => $this->resource->city,
             'surface' => $this->resource->surface,
+            'category_id' => $this->resource->category_id,
+            'swatch_id' => $this->resource->swatch_id,
             'prompt' => $this->resource->prompt,
             'status' => $this->resource->status,
             'images' => SubmissionImageResource::collection($this->whenLoaded('images')),

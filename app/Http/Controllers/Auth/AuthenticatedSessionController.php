@@ -33,7 +33,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', ['locale' => app()->getLocale()], absolute: false));
+        $fallback = route('welcome', ['locale' => app()->getLocale()], absolute: false);
+
+        return redirect()->intended($fallback);
     }
 
     /**

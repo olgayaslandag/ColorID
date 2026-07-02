@@ -7,18 +7,18 @@ namespace App\Services;
 use App\Exceptions\ImageGenerationException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class OpenAIService
 {
-    private const DEFAULT_MODEL = 'gpt-image-2';
+    private const DEFAULT_MODEL = 'dall-e-2';
     private const DEFAULT_SIZE = '1024x1024';
-    private const DEFAULT_QUALITY = 'medium';
-    private const DEFAULT_ENDPOINT = 'https://api.openai.com/v1/images/generations';
-    private const VISION_ENDPOINT = 'https://api.openai.com/v1/responses';
-    private const VISION_MODEL = 'gpt-5-mini';
+    private const DEFAULT_QUALITY = 'standard';
+    private const GENERATIONS_ENDPOINT = 'https://api.openai.com/v1/images/generations';
+    private const EDITS_ENDPOINT = 'https://api.openai.com/v1/images/edits';
+    private const VISION_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+    private const VISION_MODEL = 'gpt-4o-mini';
 
     public function __construct(
         protected TenantManager $tenantManager,
@@ -43,28 +43,31 @@ class OpenAIService
         }
 
         $imageData = $storage->get($imagePath);
-        $mime = $storage->mimeType($imagePath) ?? 'image/jpeg';
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($imageData) ?: 'image/jpeg';
         $base64 = base64_encode($imageData);
 
         $response = $this->client($apiKey)->post(
             self::VISION_ENDPOINT,
             [
                 'model' => self::VISION_MODEL,
-                'input' => [
+                'messages' => [
                     [
                         'role' => 'user',
                         'content' => [
                             [
-                                'type' => 'input_image',
-                                'image_url' => 'data:' . $mime . ';base64,' . $base64,
+                                'type' => 'text',
+                                'text' => 'Analyze this room photo in detail. Identify all paintable surfaces: walls (color, material, texture), ceiling, floor, woodwork, doors, windows, furniture. Describe: exact wall colors/materials, furniture type and placement, flooring material and color, ceiling finish, lighting (natural/artificial, direction, warmth), window placement and size, decor items, room shape. Be highly specific about colors, textures, and spatial layout so another AI can recreate this exact scene.',
                             ],
                             [
-                                'type' => 'input_text',
-                                'text' => 'Describe this room in detail for image generation. Include: wall colors/materials, furniture type and placement, flooring, ceiling, lighting (natural/artificial, direction, warmth), window placement and size, decor items, room shape and size impression. Be specific about colors, materials, and spatial layout.',
+                                'type' => 'image_url',
+                                'image_url' => [
+                                    'url' => 'data:' . $mime . ';base64,' . $base64,
+                                ],
                             ],
                         ],
                     ],
                 ],
+                'max_tokens' => 1000,
             ]
         );
 
@@ -78,28 +81,81 @@ class OpenAIService
         }
 
         $data = $response->json();
-        $output = $data['output'] ?? [];
 
-        foreach ($output as $item) {
-            if (($item['type'] ?? '') === 'message') {
-                $content = $item['content'] ?? [];
-                foreach ($content as $part) {
-                    if (($part['type'] ?? '') === 'output_text') {
-                        return trim($part['text']);
-                    }
-                }
-            }
+        return trim($data['choices'][0]['message']['content'] ?? '');
+    }
+
+    public function editImage(
+        string $originalImagePath,
+        string $prompt,
+        ?string $tenantId = null,
+    ): string {
+        $tenantId = $tenantId ?? $this->tenantManager->getTenantId();
+
+        if ($tenantId === null) {
+            throw new ImageGenerationException(
+                'No tenant context available for image editing.',
+                provider: 'openai',
+                context: ['original_image' => $originalImagePath],
+            );
         }
 
-        throw new ImageGenerationException(
-            'Vision API response does not contain expected text output.',
-            provider: 'openai',
-        );
+        try {
+            $apiKey = $this->resolveApiKey($tenantId);
+            $disk = $this->imageStorage->getDisk();
+            $storage = Storage::disk($disk);
+
+            if (!$storage->exists($originalImagePath)) {
+                throw new ImageGenerationException(
+                    'Original image not found for editing.',
+                    provider: 'openai',
+                );
+            }
+
+            $pngData = $this->convertToPng($storage->get($originalImagePath));
+
+            $size = config('services.openai.size', self::DEFAULT_SIZE);
+
+            $response = Http::withToken($apiKey)
+                ->timeout(180)
+                ->attach('image', $pngData, 'image.png', ['Content-Type' => 'image/png'])
+                ->attach('prompt', $prompt)
+                ->attach('n', '1')
+                ->attach('size', $size)
+                ->attach('model', config('services.openai.model', self::DEFAULT_MODEL))
+                ->post(self::EDITS_ENDPOINT);
+
+            if ($response->failed()) {
+                $error = $response->json();
+                throw new ImageGenerationException(
+                    message: 'OpenAI edit API error: ' . ($error['error']['message'] ?? $response->body()),
+                    provider: 'openai',
+                    context: ['original_image' => $originalImagePath, 'response' => $error],
+                );
+            }
+
+            $data = $response->json();
+            $imageData = $this->extractImageData($data);
+
+            return $this->storeGeneratedImage($imageData, $tenantId);
+        } catch (ImageGenerationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new ImageGenerationException(
+                message: "Image editing failed: {$e->getMessage()}",
+                code: (int) $e->getCode(),
+                previous: $e,
+                provider: 'openai',
+                context: [
+                    'original_image' => $originalImagePath,
+                    'tenant_id' => $tenantId,
+                ],
+            );
+        }
     }
 
     public function generateImage(
         string $prompt,
-        ?string $referenceImagePath = null,
         ?string $tenantId = null,
     ): string {
         $tenantId = $tenantId ?? $this->tenantManager->getTenantId();
@@ -114,10 +170,10 @@ class OpenAIService
 
         try {
             $apiKey = $this->resolveApiKey($tenantId);
-            $payload = $this->buildPayload($prompt, $referenceImagePath);
+            $payload = $this->buildPayload($prompt);
 
             $response = $this->client($apiKey)->post(
-                config('services.openai.endpoint', self::DEFAULT_ENDPOINT),
+                config('services.openai.endpoint', self::GENERATIONS_ENDPOINT),
                 $payload,
             );
 
@@ -150,6 +206,48 @@ class OpenAIService
         }
     }
 
+    private function convertToPng(string $imageData): string
+    {
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->buffer($imageData);
+
+        if ($mime === 'image/png') {
+            return $imageData;
+        }
+
+        $gdImage = match ($mime) {
+            'image/jpeg', 'image/jpg' => @imagecreatefromstring($imageData),
+            'image/webp' => @imagecreatefromwebp($imageData),
+            'image/gif' => @imagecreatefromgif($imageData),
+            'image/bmp' => @imagecreatefrombmp($imageData),
+            default => throw new ImageGenerationException(
+                "Unsupported image format for editing: {$mime}",
+                provider: 'openai',
+            ),
+        };
+
+        if ($gdImage === false) {
+            throw new ImageGenerationException(
+                'Failed to decode image for PNG conversion.',
+                provider: 'openai',
+            );
+        }
+
+        ob_start();
+        $result = imagepng($gdImage, null, 9);
+        $pngData = ob_get_clean();
+        imagedestroy($gdImage);
+
+        if ($result === false || $pngData === false || $pngData === '') {
+            throw new ImageGenerationException(
+                'Failed to convert image to PNG format.',
+                provider: 'openai',
+            );
+        }
+
+        return $pngData;
+    }
+
     private function client(string $apiKey): PendingRequest
     {
         return Http::withToken($apiKey)
@@ -158,7 +256,7 @@ class OpenAIService
             ->timeout(180);
     }
 
-    private function buildPayload(string $prompt, ?string $referenceImagePath = null): array
+    private function buildPayload(string $prompt): array
     {
         $payload = [
             'model' => config('services.openai.model', self::DEFAULT_MODEL),
@@ -184,9 +282,9 @@ class OpenAIService
             }
 
             if (isset($item['url'])) {
-                $binaryData = @file_get_contents($item['url']);
-                if ($binaryData !== false) {
-                    return $binaryData;
+                $response = Http::withOptions(['verify' => true])->timeout(30)->get($item['url']);
+                if ($response->successful()) {
+                    return $response->body();
                 }
             }
         }

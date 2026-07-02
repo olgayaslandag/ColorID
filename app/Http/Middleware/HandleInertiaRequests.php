@@ -19,7 +19,9 @@ class HandleInertiaRequests extends Middleware
      */
     public function version(Request $request): ?string
     {
-        return parent::version($request);
+        $manifest = public_path('build/manifest.json');
+
+        return file_exists($manifest) ? md5_file($manifest) : parent::version($request);
     }
 
     /**
@@ -37,19 +39,23 @@ class HandleInertiaRequests extends Middleware
             'locale' => app()->getLocale(),
             'availableLocales' => config('app.available_locales', ['en' => 'English']),
             'translations' => $this->getTranslations(app()->getLocale()),
+            'isAdmin' => $request->user()?->hasRole('admin') ?? false,
         ];
     }
 
     private function getTranslations(string $locale): array
     {
-        $files = glob(lang_path($locale) . '/*.php');
-        $translations = [];
+        return cache()->remember("translations.{$locale}", 86400, function () use ($locale) {
+            // Load only the most commonly used namespace to reduce memory and I/O
+            $messagesFile = lang_path($locale) . '/messages.php';
 
-        foreach ($files as $file) {
-            $key = basename($file, '.php');
-            $translations[$key] = require $file;
-        }
+            if (file_exists($messagesFile)) {
+                return [
+                    'messages' => require $messagesFile,
+                ];
+            }
 
-        return $translations;
+            return [];
+        });
     }
 }

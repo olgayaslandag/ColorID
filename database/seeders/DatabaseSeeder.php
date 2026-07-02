@@ -42,10 +42,38 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Create a tenant for local development (skip if already exists)
+        Tenant::firstOrCreate(
+            ['domain' => 'localhost'],
+            [
+                'name' => 'Local Development',
+                'domain' => 'localhost',
+                'logo' => null,
+                'primary_color' => '#4F46E5',
+                'secondary_color' => '#F43F5E',
+                'status' => true,
+                'monthly_limit' => 1000,
+            ]
+        );
+
+        Tenant::firstOrCreate(
+            ['domain' => '127.0.0.1'],
+            [
+                'name' => 'Local Development (IP)',
+                'domain' => '127.0.0.1',
+                'logo' => null,
+                'primary_color' => '#4F46E5',
+                'secondary_color' => '#F43F5E',
+                'status' => true,
+                'monthly_limit' => 1000,
+            ]
+        );
+
         // Run additional seeders
         $this->call([
+            RolePermissionSeeder::class,
             TenantSeeder::class,
-            PaletteSeeder::class,
+            BrandProductSeeder::class,
         ]);
     }
 }

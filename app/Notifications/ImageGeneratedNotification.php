@@ -35,13 +35,16 @@ class ImageGeneratedNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $locale = app()->getLocale();
+        $url = url("/{$locale}/admin/submissions/{$this->submission->uuid}");
+
         return (new MailMessage)
             ->subject('Your image generation is complete!')
             ->greeting('Hello, '.($this->submission->name ?? 'there').'!')
             ->line('Your image has been successfully generated.')
             ->line('Prompt: '.$this->submission->prompt)
             ->line('You can view your generated image by visiting your dashboard.')
-            ->action('View Submission', url('/submissions/'.$this->submission->uuid))
+            ->action('View Submission', $url)
             ->line('Thank you for using our service!');
     }
 

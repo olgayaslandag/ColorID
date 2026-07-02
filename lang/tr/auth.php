@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'logout' => 'Çıkış Yap',
+
     /*
     |--------------------------------------------------------------------------
     | Kimlik Doğrulama Dil Satırları

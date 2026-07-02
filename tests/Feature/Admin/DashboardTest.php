@@ -2,16 +2,15 @@
 
 namespace Tests\Feature\Admin;
 
-use Tests\TestCase;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(TestCase::class, RefreshDatabase::class);
+use Spatie\Permission\Models\Role;
 
 it('dashboard is accessible when authenticated', function () {
+    $role = Role::create(['name' => 'admin']);
     $user = User::factory()->create();
+    $user->assignRole('admin');
 
-    $response = $this->actingAs($user)->get('/admin');
+    $response = $this->actingAs($user)->get(route('admin.dashboard', ['locale' => 'en']));
 
     $response->assertOk();
 });

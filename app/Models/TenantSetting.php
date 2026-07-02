@@ -15,7 +15,14 @@ class TenantSetting extends Model
         'value',
     ];
 
-    public function tenant()
+    protected function casts(): array
+    {
+        return [
+            'value' => 'encrypted',
+        ];
+    }
+
+    public function tenant(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Tenant::class);
     }

@@ -23,6 +23,6 @@ class WidgetConfigController extends Controller
     {
         $tenant = $tenantManager->getTenant();
 
-        return response()->json(WidgetConfigResource::make($tenant)->toArray(request()));
+        return WidgetConfigResource::make($tenant)->response()->setStatusCode(200);
     }
 }

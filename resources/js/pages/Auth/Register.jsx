@@ -1,8 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import GuestLayout from '@/layouts/GuestLayout';
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -24,16 +22,24 @@ export default function Register() {
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout
+            imageClass="bg-register-image"
+            imageColClass="col-lg-5"
+            contentColClass="col-lg-7"
+        >
             <Head title={__('messages.auth_register_title')} />
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="name" value={__('messages.form_label_name')} />
+            <div className="text-center">
+                <h1 className="h4 text-gray-900 mb-4">{__('messages.auth_register_title')}</h1>
+            </div>
+
+            <form className="user" onSubmit={submit}>
+                <div className="form-group">
                     <TextInput
                         id="name"
                         type="text"
-                        className="mt-1 w-100"
+                        className="form-control-user"
+                        placeholder={__('messages.form_label_name')}
                         value={form.data.name}
                         onChange={(v) => form.setData('name', v)}
                         required
@@ -43,12 +49,12 @@ export default function Register() {
                     <InputError className="mt-2" message={form.errors.name} />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value={__('messages.form_label_email')} />
+                <div className="form-group">
                     <TextInput
                         id="email"
                         type="email"
-                        className="mt-1 w-100"
+                        className="form-control-user"
+                        placeholder={__('messages.form_label_email')}
                         value={form.data.email}
                         onChange={(v) => form.setData('email', v)}
                         required
@@ -57,46 +63,61 @@ export default function Register() {
                     <InputError className="mt-2" message={form.errors.email} />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value={__('messages.form_label_password')} />
-                    <TextInput
-                        id="password"
-                        type="password"
-                        className="mt-1 w-100"
-                        value={form.data.password}
-                        onChange={(v) => form.setData('password', v)}
-                        required
-                        autocomplete="new-password"
-                    />
-                    <InputError className="mt-2" message={form.errors.password} />
+                <div className="form-group row">
+                    <div className="col-sm-6 mb-3 mb-sm-0">
+                        <TextInput
+                            id="password"
+                            type="password"
+                            className="form-control-user"
+                            placeholder={__('messages.form_label_password')}
+                            value={form.data.password}
+                            onChange={(v) => form.setData('password', v)}
+                            required
+                            autocomplete="new-password"
+                        />
+                        <InputError className="mt-2" message={form.errors.password} />
+                    </div>
+                    <div className="col-sm-6">
+                        <TextInput
+                            id="password_confirmation"
+                            type="password"
+                            className="form-control-user"
+                            placeholder={__('messages.form_label_confirm_password')}
+                            value={form.data.password_confirmation}
+                            onChange={(v) => form.setData('password_confirmation', v)}
+                            required
+                            autocomplete="new-password"
+                        />
+                        <InputError className="mt-2" message={form.errors.password_confirmation} />
+                    </div>
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password_confirmation" value={__('messages.form_label_confirm_password')} />
-                    <TextInput
-                        id="password_confirmation"
-                        type="password"
-                        className="mt-1 w-100"
-                        value={form.data.password_confirmation}
-                        onChange={(v) => form.setData('password_confirmation', v)}
-                        required
-                        autocomplete="new-password"
-                    />
-                    <InputError className="mt-2" message={form.errors.password_confirmation} />
-                </div>
+                <button
+                    type="submit"
+                    className="btn btn-primary btn-user btn-block"
+                    disabled={form.processing}
+                >
+                    {__('messages.auth_register_button')}
+                </button>
 
-                <div className="mt-4 d-flex align-items-center justify-content-end">
-                    <Link
-                        href={route('login')}
-                        className="small text-secondary text-decoration-underline hover-text-body focus:outline-none"
-                    >
-                        {__('messages.auth_register_already')}
-                    </Link>
-                    <PrimaryButton className="ms-4" disabled={form.processing}>
-                        {__('messages.auth_register_button')}
-                    </PrimaryButton>
-                </div>
+                {/*
+                <hr>
+                <a href="#" className="btn btn-google btn-user btn-block">
+                    <i className="fab fa-google fa-fw"></i> Register with Google
+                </a>
+                <a href="#" className="btn btn-facebook btn-user btn-block">
+                    <i className="fab fa-facebook-f fa-fw"></i> Register with Facebook
+                </a>
+                */}
             </form>
+
+            <hr />
+
+            <div className="text-center">
+                <Link className="small" href={route('login')}>
+                    {__('messages.auth_register_already')}
+                </Link>
+            </div>
         </GuestLayout>
     );
 }

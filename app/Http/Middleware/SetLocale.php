@@ -35,6 +35,13 @@ class SetLocale
 
         URL::defaults(['locale' => app()->getLocale()]);
 
+        // Remove the locale route parameter so it doesn't interfere with
+        // controller argument resolution (route model binding depends on
+        // positional parameter order via array_values in ControllerDispatcher).
+        if ($route = $request->route()) {
+            $route->forgetParameter('locale');
+        }
+
         return $next($request);
     }
 }

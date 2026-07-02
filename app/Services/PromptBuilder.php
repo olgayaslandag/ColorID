@@ -4,79 +4,146 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Palette;
+use App\Models\Swatch;
 
 class PromptBuilder
 {
-    private const SURFACE_MAP = [
-        'ic_duvar' => 'interior wall',
-        'dis_duvar' => 'exterior wall',
-        'tavan' => 'ceiling',
-        'ic_zemin' => 'interior floor',
-        'dis_zemin' => 'exterior floor',
-        'ahsap_kapi' => 'wooden door',
-        'metal_kapi' => 'metal door',
-        'pvc_pencere' => 'PVC window frame',
-        'ahsap_pencere' => 'wooden window frame',
-        'mutfak_tezgahi' => 'kitchen countertop',
-        'masa' => 'table',
-        'sandalye_koltuk' => 'chair / armchair',
-        'dolap_ic' => 'interior cabinet',
-        'dolap_dis' => 'exterior cabinet',
-        'mobilya_ahsap' => 'wooden furniture',
-        'mobilya_metal' => 'metal furniture',
-        'korkuluk_parmaklik' => 'railing / balustrade',
-        'demir_kapi' => 'iron door',
-        'kepenk' => 'shutter',
-        'bahce_citi' => 'garden fence',
-        'sera_camli_yuzey' => 'greenhouse / glazed surface',
-        'radyator_petek' => 'radiator',
-        'boru_tesisat' => 'pipe / plumbing',
-        'garaj_zemini' => 'garage floor',
-        'havuz_kenari' => 'poolside',
-        'teras_balkon' => 'terrace / balcony',
-        'cati' => 'roof',
-        'sundurma' => 'canopy / awning',
-        'ahsap_deck' => 'wooden deck',
-        'seramik_fayans' => 'ceramic / tile',
-        'sivali_yuzey' => 'plastered surface',
-        'alcipan' => 'drywall',
-        'kartonpiyer' => 'cornice / molding',
-        'kalorifer_boregi' => 'radiator cover',
-        'neme_maruz_yuzey_banyo' => 'moisture-exposed bathroom surface',
-        'islak_hacim_mutfak' => 'wet area kitchen surface',
-        'yangin_kapisi' => 'fire door',
-        'tabela_levha' => 'sign / plate',
-        'endustriyel_makine' => 'industrial machine',
-        'arac_romork' => 'vehicle / trailer',
-        'gemi_tekne' => 'ship / boat',
-        'her_yer_stella_cok_amagli' => 'entire scene',
+    private const CATEGORY_MAP = [
+        'İç Cephe Boyaları' => ['surface' => 'walls', 'description' => 'interior walls', 'preposition' => 'the'],
+        'Dış Cephe Boyaları' => ['surface' => 'exterior walls', 'description' => 'exterior walls', 'preposition' => 'the'],
+        'Ahşap ve Metal Boyaları' => ['surface' => 'wood and metal surfaces', 'description' => 'wood and metal surfaces', 'preposition' => 'the'],
+        'Doğal Boyalar' => ['surface' => 'walls and surfaces', 'description' => 'walls and surfaces', 'preposition' => 'the'],
+        'Endüstriyel Boyalar' => ['surface' => 'industrial surfaces', 'description' => 'industrial surfaces', 'preposition' => 'the'],
     ];
 
-    private const FINAL_DIRECTIVE = 'Generate a photorealistic image of this exact scene. Keep all elements, lighting, shadows, and layout identical — only the %s color changes to %s. The paint/color must look realistically applied with natural lighting and reflections.';
+    private const SURFACE_KEYWORDS = [
+        'duvar' => 'walls',
+        'duvarlar' => 'walls',
+        'wall' => 'walls',
+        'zemin' => 'the floor',
+        'floor' => 'the floor',
+        'tavan' => 'the ceiling',
+        'ceiling' => 'the ceiling',
+        'masa' => 'the table',
+        'table' => 'the table',
+        'kapı' => 'the door',
+        'door' => 'the door',
+        'pencere' => 'the window',
+        'window' => 'the window',
+        'mobilya' => 'the furniture',
+        'furniture' => 'the furniture',
+        'dolap' => 'the cabinet',
+        'cabinet' => 'the cabinet',
+        'tezgah' => 'the countertop',
+        'countertop' => 'the countertop',
+        'mutfak' => 'the kitchen cabinets',
+        'kapak' => 'the cabinet doors',
+    ];
+
+    public function buildEditPrompt(
+        ?string $userPrompt,
+        Swatch $swatch,
+        string $categoryName,
+        ?string $roomDescription = null,
+    ): string {
+        $colorCode = $this->formatColorCode($swatch->value);
+        $surfaceInfo = $this->getSurfaceForCategory($categoryName);
+        $colorName = $this->getColorName($colorCode);
+
+        $surfaces = [$surfaceInfo['description']];
+        $additional = $this->parseAdditionalSurfaces($userPrompt);
+        if (!empty($additional)) {
+            $surfaces = array_merge($surfaces, $additional);
+        }
+        $surfaces = array_unique($surfaces);
+        $surfaceList = implode(', ', $surfaces);
+        $lastComma = strrpos($surfaceList, ',');
+        if ($lastComma !== false) {
+            $surfaceList = substr_replace($surfaceList, ' and', $lastComma, 1);
+        }
+
+        $prompt = "Edit this image realistically. Paint the {$surfaceList} with the color {$colorCode} ({$colorName}). Apply the paint evenly with realistic finish, proper lighting, shadows, and texture that matches the original photo.";
+
+        if ($roomDescription !== null && $roomDescription !== '') {
+            $prompt .= " Keep all furniture, objects, lighting, and layout exactly as described: {$roomDescription}";
+        }
+
+        $prompt .= " Do not change anything else in the image. Only apply the new paint color to the specified surfaces.";
+
+        if ($userPrompt !== null && $userPrompt !== '') {
+            $userTrimmed = trim($userPrompt);
+            $prompt .= " User additionally requests: {$userTrimmed}.";
+        }
+
+        return $prompt;
+    }
 
     public function build(
         ?string $userPrompt,
-        Palette $palette,
-        string $surface,
+        Swatch $swatch,
+        string $categoryName,
         ?string $roomDescription = null,
     ): string {
-        $colorCode = $this->formatColorCode($palette->color_code);
-        $surfaceLabel = self::SURFACE_MAP[$surface] ?? 'specified surface';
+        return $this->buildEditPrompt($userPrompt, $swatch, $categoryName, $roomDescription);
+    }
 
-        $prompt = "A photorealistic scene. The {$surfaceLabel} is painted with color {$colorCode} (applied evenly, realistic finish). ";
+    private function getSurfaceForCategory(string $categoryName): array
+    {
+        return self::CATEGORY_MAP[$categoryName] ?? [
+            'surface' => 'specified surface',
+            'description' => $this->deriveSurfaceLabel($categoryName),
+            'preposition' => 'the',
+        ];
+    }
 
-        if ($roomDescription !== null && $roomDescription !== '') {
-            $prompt .= "The room layout and details: {$roomDescription}. ";
+    private function parseAdditionalSurfaces(?string $userPrompt): array
+    {
+        if ($userPrompt === null || $userPrompt === '') {
+            return [];
         }
 
-        if ($userPrompt !== null && $userPrompt !== '') {
-            $prompt .= "Additional user request that must also be applied: " . trim($userPrompt) . ". ";
+        $lower = mb_strtolower(trim($userPrompt), 'UTF-8');
+        $surfaces = [];
+
+        foreach (self::SURFACE_KEYWORDS as $word => $label) {
+            if (mb_strpos($lower, $word, 0, 'UTF-8') !== false) {
+                $surfaces[] = $label;
+            }
         }
 
-        $prompt .= sprintf(self::FINAL_DIRECTIVE, $surfaceLabel, $colorCode);
+        return array_values(array_unique($surfaces));
+    }
 
-        return $prompt;
+    private function deriveSurfaceLabel(string $categoryName): string
+    {
+        $lower = mb_strtolower(trim($categoryName), 'UTF-8');
+
+        $keywords = [
+            'iç' => 'interior surfaces',
+            'ic' => 'interior surfaces',
+            'dış' => 'exterior surfaces',
+            'dis' => 'exterior surfaces',
+            'duvar' => 'wall surfaces',
+            'ahşap' => 'wood surfaces',
+            'ahsap' => 'wood surfaces',
+            'metal' => 'metal surfaces',
+            'doğal' => 'natural surfaces',
+            'dogal' => 'natural surfaces',
+            'endüstriyel' => 'industrial surfaces',
+            'endustriyel' => 'industrial surfaces',
+            'boya' => 'painted surfaces',
+            'tavan' => 'ceiling surfaces',
+            'zemin' => 'floor surfaces',
+            'masa' => 'table surfaces',
+        ];
+
+        foreach ($keywords as $word => $label) {
+            if (mb_strpos($lower, $word, 0, 'UTF-8') !== false) {
+                return $label;
+            }
+        }
+
+        return 'specified surfaces';
     }
 
     private function formatColorCode(string $colorCode): string
@@ -88,5 +155,103 @@ class PromptBuilder
         }
 
         return "#{$code}";
+    }
+
+    private function getColorName(string $hex): string
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) !== 6) {
+            return 'selected color';
+        }
+
+        [$r, $g, $b] = sscanf($hex, '%02x%02x%02x');
+
+        $hsl = $this->rgbToHsl($r, $g, $b);
+        $h = $hsl[0] * 360;
+        $s = $hsl[1];
+        $l = $hsl[2];
+
+        if ($l < 0.08) {
+            return 'very dark';
+        }
+        if ($l > 0.92) {
+            return 'white';
+        }
+
+        if ($s < 0.12) {
+            if ($l < 0.35) {
+                return 'dark gray';
+            }
+            if ($l < 0.65) {
+                return 'medium gray';
+            }
+            return 'light gray';
+        }
+
+        $hueNames = [
+            [0, 25, 'red'],
+            [25, 45, 'orange'],
+            [45, 70, 'yellow'],
+            [70, 150, 'green'],
+            [150, 200, 'teal'],
+            [200, 255, 'blue'],
+            [255, 285, 'indigo'],
+            [285, 330, 'purple'],
+            [330, 360, 'pink'],
+            [0, 0, 'red'],
+        ];
+
+        $baseName = 'color';
+        foreach ($hueNames as [$start, $end, $name]) {
+            if ($start <= $end) {
+                if ($h >= $start && $h < $end) {
+                    $baseName = $name;
+                    break;
+                }
+            }
+        }
+
+        $prefix = '';
+        if ($l < 0.3) {
+            $prefix = 'dark ';
+        } elseif ($l > 0.7) {
+            $prefix = 'light ';
+        }
+
+        return $prefix . $baseName;
+    }
+
+    private function rgbToHsl(int $r, int $g, int $b): array
+    {
+        $r /= 255;
+        $g /= 255;
+        $b /= 255;
+
+        $max = max($r, $g, $b);
+        $min = min($r, $g, $b);
+        $l = ($max + $min) / 2;
+
+        if ($max === $min) {
+            return [0, 0, $l];
+        }
+
+        $d = $max - $min;
+        $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
+
+        switch ($max) {
+            case $r:
+                $h = ($g - $b) / $d + ($g < $b ? 6 : 0);
+                break;
+            case $g:
+                $h = ($b - $r) / $d + 2;
+                break;
+            default:
+                $h = ($r - $g) / $d + 4;
+                break;
+        }
+
+        $h /= 6;
+
+        return [$h, $s, $l];
     }
 }

@@ -56,6 +56,7 @@ class ImageStorageManager
             throw new RuntimeException("Source image not found at path: {$sourcePath}");
         }
 
+        $tenantId = preg_replace('/[^a-zA-Z0-9_\-]/', '', $tenantId);
         $filename = basename($sourcePath);
         $destinationPath = sprintf(self::GENERATED_PATH, $tenantId) . '/' . $filename;
 

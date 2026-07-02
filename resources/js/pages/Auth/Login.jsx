@@ -1,9 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import Checkbox from '@/Components/Checkbox';
 import GuestLayout from '@/layouts/GuestLayout';
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -24,20 +21,24 @@ export default function Login({ canResetPassword, status }) {
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout imageClass="bg-login-image">
             <Head title={__('messages.auth_login_title')} />
+
+            <div className="text-center">
+                <h1 className="h4 text-gray-900 mb-4">{__('messages.auth_login_title')}</h1>
+            </div>
 
             {status && (
                 <div className="mb-3 small fw-medium text-success">{status}</div>
             )}
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value={__('messages.form_label_email')} />
+            <form className="user" onSubmit={submit}>
+                <div className="form-group">
                     <TextInput
                         id="email"
                         type="email"
-                        className="mt-1 w-100"
+                        className="form-control-user"
+                        placeholder={__('messages.form_label_email')}
                         value={form.data.email}
                         onChange={(v) => form.setData('email', v)}
                         required
@@ -47,12 +48,12 @@ export default function Login({ canResetPassword, status }) {
                     <InputError className="mt-2" message={form.errors.email} />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value={__('messages.form_label_password')} />
+                <div className="form-group">
                     <TextInput
                         id="password"
                         type="password"
-                        className="mt-1 w-100"
+                        className="form-control-user"
+                        placeholder={__('messages.form_label_password')}
                         value={form.data.password}
                         onChange={(v) => form.setData('password', v)}
                         required
@@ -61,33 +62,56 @@ export default function Login({ canResetPassword, status }) {
                     <InputError className="mt-2" message={form.errors.password} />
                 </div>
 
-                <div className="mt-4">
-                    <label className="d-flex align-items-center">
-                        <Checkbox
+                <div className="form-group">
+                    <div className="custom-control custom-checkbox small">
+                        <input
+                            type="checkbox"
+                            className="custom-control-input"
+                            id="remember"
                             checked={form.data.remember}
-                            onChange={(v) => form.setData('remember', v)}
+                            onChange={(e) => form.setData('remember', e.target.checked)}
                         />
-                        <span className="ms-2 small text-secondary">{__('messages.form_label_remember_me')}</span>
-                    </label>
+                        <label className="custom-control-label" htmlFor="remember">
+                            {__('messages.form_label_remember_me')}
+                        </label>
+                    </div>
                 </div>
 
-                <div className="mt-4 d-flex align-items-center justify-content-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="small text-secondary text-decoration-underline hover-text-body focus:outline-none"
-                        >
-                            {__('messages.auth_forgot_password_link')}
-                        </Link>
-                    )}
-                    <PrimaryButton
-                        className="ms-4"
-                        disabled={form.processing}
-                    >
-                        {__('messages.auth_login_button')}
-                    </PrimaryButton>
-                </div>
+                <button
+                    type="submit"
+                    className="btn btn-primary btn-user btn-block"
+                    disabled={form.processing}
+                >
+                    {__('messages.auth_login_button')}
+                </button>
+
+                {/*
+                <!-- Social login buttons (optional) -->
+                <hr>
+                <a href="#" className="btn btn-google btn-user btn-block">
+                    <i className="fab fa-google fa-fw"></i> Login with Google
+                </a>
+                <a href="#" className="btn btn-facebook btn-user btn-block">
+                    <i className="fab fa-facebook-f fa-fw"></i> Login with Facebook
+                </a>
+                */}
             </form>
+
+            <hr />
+
+            <div className="text-center">
+                {canResetPassword && (
+                    <Link className="small" href={route('password.request')}>
+                        {__('messages.auth_forgot_password_link')}
+                    </Link>
+                )}
+            </div>
+
+            <div className="text-center">
+                <Link className="small" href={route('register')}>
+                    {__('messages.nav_register')}
+                </Link>
+            </div>
         </GuestLayout>
     );
 }

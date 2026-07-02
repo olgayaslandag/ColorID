@@ -12,6 +12,8 @@ export default function UpdateProfileInformationForm({ mustVerifyEmail, status }
     const form = useForm({
         name: user.name,
         email: user.email,
+        phone: user.phone || '',
+        city: user.city || '',
     });
 
     const submit = (e) => {
@@ -54,6 +56,32 @@ export default function UpdateProfileInformationForm({ mustVerifyEmail, status }
                         autocomplete="username"
                     />
                     <InputError className="mt-2" message={form.errors.email} />
+                </div>
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="phone" value={__('messages.form_label_phone')} />
+                    <TextInput
+                        id="phone"
+                        type="tel"
+                        className="mt-1 block w-full"
+                        value={form.data.phone}
+                        onChange={(v) => form.setData('phone', v)}
+                        autocomplete="tel"
+                    />
+                    <InputError className="mt-2" message={form.errors.phone} />
+                </div>
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="city" value={__('messages.form_label_city')} />
+                    <TextInput
+                        id="city"
+                        type="text"
+                        className="mt-1 block w-full"
+                        value={form.data.city}
+                        onChange={(v) => form.setData('city', v)}
+                        autocomplete="address-level2"
+                    />
+                    <InputError className="mt-2" message={form.errors.city} />
                 </div>
 
                 {mustVerifyEmail && !user.email_verified_at && (
